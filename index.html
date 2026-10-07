@@ -50,7 +50,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .tools input[type=search]{flex:1 1 220px;width:auto}
 .tools select{flex:0 1 220px;width:auto}
 .plist{display:flex;flex-direction:column;border-top:1px solid var(--line);max-height:60vh;overflow:auto}
-.pi{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line)}
+.pi{display:grid;grid-template-columns:34px 1fr auto auto;gap:10px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line)}
 .pi img{width:34px;height:58px;object-fit:contain;background:#fff;border-radius:6px}
 .pi b{display:block;font-weight:600;font-size:14px}
 .pi span{font-size:12px;color:var(--mute)}
@@ -119,6 +119,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   <nav id="tabs">
     <button type="button" data-v="profesionales" aria-pressed="true">Profesionales</button>
     <button type="button" data-v="interior" aria-pressed="false">Interior del país</button>
+    <button type="button" data-v="outlet" aria-pressed="false">Outlet</button>
     <button type="button" data-v="nuevos" aria-pressed="false">Sin publicar</button>
     <button type="button" data-v="usuarios" aria-pressed="false" id="tusr" hidden>Usuarios</button>
     <button type="button" data-v="historial" aria-pressed="false">Historial</button>
@@ -190,6 +191,36 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     </div>
   </div>
 
+  <div id="vout" hidden>
+    <div class="card">
+      <h2>Qué entra al Outlet</h2>
+      <p class="sub">Entran solos los tonos con stock de lotes que ingresaron antes de la fecha de corte. Las reposiciones al mismo lote cuentan como stock nuevo. Vale para los dos catálogos; cada catálogo puede prender o apagar su Outlet en su pestaña.</p>
+      <label class="f" for="ocorte">Lotes ingresados antes del</label>
+      <input type="date" id="ocorte" style="max-width:220px">
+    </div>
+    <div class="card">
+      <h2>Tonos en el Outlet</h2>
+      <p class="sub" id="ocnt"></p>
+      <div class="tools"><input type="search" id="oq" placeholder="Buscar por nombre o código"></div>
+      <div class="plist" id="olist"><p class="muted">Cargando…</p></div>
+    </div>
+    <div class="card">
+      <h2>Agregar tonos a mano</h2>
+      <p class="sub">Entran con todo su stock, sin importar cuándo ingresaron.</p>
+      <div class="tools"><input type="search" id="oaq" placeholder="Buscar un tono disponible para agregar"></div>
+      <div class="plist" id="oalist"><p class="muted">Escribí para buscar.</p></div>
+    </div>
+    <div class="card" id="oexw" hidden>
+      <h2>Sacados del Outlet</h2>
+      <p class="sub">Cumplen la fecha pero no van.</p>
+      <div class="plist" id="oexlist"></div>
+    </div>
+    <div class="card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+      <span class="muted" id="oest">Sin cambios.</span>
+      <button class="btn" type="button" id="osave" disabled>Guardar y recalcular</button>
+    </div>
+  </div>
+
   <div id="vlog" hidden>
     <div class="card" id="acard">
       <h2>Actualización desde el sistema</h2>
@@ -223,6 +254,19 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     <div id="pmsg" class="msg err" hidden></div>
     <div class="pbtns"><button class="btn sec" type="button" id="pcan2">Cancelar</button><button class="btn" type="submit" id="pok">Publicar en los dos catálogos</button></div>
   </form>
+</div></div>
+
+<div class="modal" id="fot" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="ftit" style="max-width:520px">
+  <h2 id="ftit">Cambiar foto</h2>
+  <p class="sub" id="fsub"></p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+    <div><label class="f">Actual</label><img id="fact" alt="" style="width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;display:block"></div>
+    <div><label class="f">Nueva</label><canvas id="fcan" width="440" height="760" style="width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#fff;display:block"></canvas></div>
+  </div>
+  <label class="btn sec" style="display:block;text-align:center;margin-top:12px">Elegir foto<input type="file" id="ffile" accept="image/*" hidden></label>
+  <p class="muted" style="margin:6px 0 0">Fondo blanco, sin sombra. Se recorta y centra sola. El catálogo la muestra en unos minutos.</p>
+  <div id="fmsg" class="msg err" hidden style="margin-top:10px"></div>
+  <div class="pbtns"><button class="btn sec" type="button" id="fno">Cancelar</button><button class="btn" type="button" id="fok" disabled>Guardar foto</button></div>
 </div></div>
 
 <div class="save" id="savebar" hidden><div class="in">
@@ -284,8 +328,8 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   function ir(v){
     VISTA=v; sucio=false; $('savebar').hidden=true; aviso('');
     Array.prototype.forEach.call($('tabs').children,function(c){ c.setAttribute('aria-pressed',c.getAttribute('data-v')===v) });
-    $('vcat').hidden=!(v in SITIOS); $('vusr').hidden=v!=='usuarios'; $('vlog').hidden=v!=='historial'; $('vnue').hidden=v!=='nuevos';
-    if(v in SITIOS) cargarCat(v); else if(v==='usuarios') cargarUsr(); else if(v==='nuevos') cargarNue(); else cargarLog();
+    $('vcat').hidden=!(v in SITIOS); $('vusr').hidden=v!=='usuarios'; $('vlog').hidden=v!=='historial'; $('vnue').hidden=v!=='nuevos'; $('vout').hidden=v!=='outlet';
+    if(v in SITIOS) cargarCat(v); else if(v==='usuarios') cargarUsr(); else if(v==='nuevos') cargarNue(); else if(v==='outlet') cargarOut(); else cargarLog();
   }
 
   /* ---------- catálogo ---------- */
@@ -353,6 +397,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       var on=!CAT.oc[p.k];
       return '<div class="pi'+(on?'':' off')+'"><img loading="lazy" alt="" src="'+base+'img/p/'+encodeURIComponent(p.k)+'.jpg?v=9">'+
         '<div><b>'+esc(p.name)+(p.o?'<span class="tag">Outlet</span>':'')+'</b><span>'+esc(p.code||'')+' · Cód. '+esc(p.k)+' · '+esc(D.t.lines[p.line])+'</span></div>'+
+        '<button class="lnk" type="button" data-foto="'+esc(p.k)+'" title="Cambiar foto">Foto</button>'+
         '<label class="sw" title="'+(on?'Visible':'Oculto')+'"><input type="checkbox" data-k="'+esc(p.k)+'"'+(on?' checked':'')+' aria-label="Mostrar '+esc(p.name)+'"></label></div>';
     }).join('');
     $('plist').innerHTML=h||'<p class="muted" style="padding:10px 0">No hay productos con ese filtro.</p>';
@@ -467,8 +512,9 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   $('pub').addEventListener('click',function(ev){ if(ev.target===this) cerrarPub() });
   document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'&&!$('pub').hidden) cerrarPub() });
   // Foto: se recortan los márgenes blancos y se centra en 440x760 con fondo blanco, como las del catálogo.
-  $('pfile').addEventListener('change',function(){
-    var f=this.files&&this.files[0]; if(!f) return;
+  // Foto: se recortan los márgenes blancos y se centra en 440x760 con fondo blanco, como las del catálogo.
+  // Devuelve el color promedio de la zona media-baja del frasco (donde se ve el esmalte).
+  function procesarFoto(f,can,ok,mal){
     var img=new Image(), url=URL.createObjectURL(f);
     img.onload=function(){
       URL.revokeObjectURL(url);
@@ -478,16 +524,19 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       for(var y=0;y<h;y++) for(var x=0;x<w;x++){ var i=(y*w+x)*4; if(px[i]<235||px[i+1]<235||px[i+2]<235){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y } }
       if(x1<0){ x0=0;y0=0;x1=w-1;y1=h-1 }
       var bw=x1-x0+1, bh=y1-y0+1, pad=28, s=Math.min((440-2*pad)/bw,(760-2*pad)/bh), dw=bw*s, dh=bh*s;
-      var c=$('pcan').getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,440,760); c.imageSmoothingQuality='high';
+      var c=can.getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,440,760); c.imageSmoothingQuality='high';
       c.drawImage(t,x0,y0,bw,bh,(440-dw)/2,(760-dh)/2,dw,dh);
-      // Color: promedio de la zona media-baja del frasco (donde se ve el esmalte).
       var d=c.getImageData(Math.round(440*.35),Math.round((760-dh)/2+dh*.62),Math.round(440*.3),Math.max(4,Math.round(dh*.18))).data, r=0,g=0,b=0,n=0;
       for(var j=0;j<d.length;j+=4){ var mx=Math.max(d[j],d[j+1],d[j+2]); if(mx<245){ r+=d[j];g+=d[j+1];b+=d[j+2];n++ } }
-      if(n){ var hx=function(v){ v=Math.round(v/n).toString(16); return v.length<2?'0'+v:v }; $('phex').value='#'+hx(r)+hx(g)+hx(b) }
-      FOTO=$('pcan').toDataURL('image/jpeg',.86);
+      var hx=function(v){ v=Math.round(v/n).toString(16); return v.length<2?'0'+v:v };
+      ok(can.toDataURL('image/jpeg',.86), n?'#'+hx(r)+hx(g)+hx(b):null);
     };
-    img.onerror=function(){ $('pmsg').textContent='No se pudo leer esa imagen.'; $('pmsg').hidden=false };
+    img.onerror=function(){ URL.revokeObjectURL(url); mal() };
     img.src=url;
+  }
+  $('pfile').addEventListener('change',function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    procesarFoto(f,$('pcan'),function(dataUrl,hex){ FOTO=dataUrl; if(hex) $('phex').value=hex },function(){ $('pmsg').textContent='No se pudo leer esa imagen.'; $('pmsg').hidden=false });
   });
   $('pfrm').addEventListener('submit',function(ev){
     ev.preventDefault(); var m=$('pmsg'); m.hidden=true;
@@ -499,6 +548,94 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     api({accion:'publicar',producto:{sku:sku,nombre:nom,codigo:$('pcod').value.trim(),linea:L,fam:esTono(L)?fam:-1,col:+$('pcol').value,hex:esTono(L)?$('phex').value.slice(1):'',foto:FOTO}}).then(function(r){
       NUE.productos=NUE.productos.filter(function(p){return p.sku!==sku}); DATOS={}; cerrarPub(); pintarNue(); aviso(nom+': '+r.mensaje);
     }).catch(function(e){ m.textContent=e.message; m.hidden=false }).then(function(){ b.disabled=false; b.textContent='Publicar en los dos catálogos' });
+  });
+
+  /* ---------- cambiar foto de un producto publicado ---------- */
+  var FSKU=null, FFOTO=null;
+  $('plist').addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-foto]'); if(!b) return;
+    FSKU=b.getAttribute('data-foto'); FFOTO=null;
+    var p=prods().filter(function(x){return x.k===FSKU})[0]||{name:FSKU,code:''};
+    $('fsub').textContent=p.name+' · '+(p.code?p.code+' · ':'')+'Cód. '+FSKU+'. Se cambia en los dos catálogos.';
+    $('fact').src=SITIOS[CAT.catalogo]+'img/p/'+encodeURIComponent(FSKU)+'.jpg?t='+Date.now();
+    var c=$('fcan').getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,440,760);
+    $('ffile').value=''; $('fok').disabled=true; $('fmsg').hidden=true; $('fot').hidden=false;
+  });
+  function cerrarFot(){ $('fot').hidden=true; FSKU=null }
+  $('fno').addEventListener('click',cerrarFot);
+  $('fot').addEventListener('click',function(ev){ if(ev.target===this) cerrarFot() });
+  $('ffile').addEventListener('change',function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    procesarFoto(f,$('fcan'),function(dataUrl){ FFOTO=dataUrl; $('fok').disabled=false },function(){ $('fmsg').textContent='No se pudo leer esa imagen.'; $('fmsg').hidden=false });
+  });
+  $('fok').addEventListener('click',function(){
+    var b=this; b.disabled=true; b.textContent='Guardando…';
+    api({accion:'cambiarFoto',sku:FSKU,foto:FFOTO}).then(function(){
+      var k=FSKU; cerrarFot(); aviso('Foto actualizada en los dos catálogos. Puede tardar unos minutos en verse.');
+      Array.prototype.forEach.call(document.querySelectorAll('#plist [data-foto="'+k+'"]'),function(x){ var im=x.closest('.pi').querySelector('img'); if(im) im.src=FFOTO });
+    }).catch(function(e){ $('fmsg').textContent=e.message; $('fmsg').hidden=false }).then(function(){ b.disabled=false; b.textContent='Guardar foto' });
+  });
+
+  /* ---------- Outlet: fecha de corte y ajustes a mano ---------- */
+  var OC=null, OCO='', OD=null;
+  function datosProf(){
+    var base=SITIOS.profesionales;
+    return DATOS.profesionales?Promise.resolve(DATOS.profesionales):Promise.all([fetch(base+'data/tonos.json').then(function(r){return r.json()}),fetch(base+'data/disponibles.json',{cache:'no-cache'}).then(function(r){return r.json()})]).then(function(x){ DATOS.profesionales={t:x[0],d:x[1]}; return DATOS.profesionales });
+  }
+  function cargarOut(){
+    $('olist').innerHTML='<p class="muted">Cargando…</p>';
+    Promise.all([api({accion:'outletLeer'}),datosProf()]).then(function(r){
+      OC=r[0].outlet; OCO=JSON.stringify(OC); OD=r[1]; $('ocorte').value=OC.corte; pintarOut();
+    }).catch(function(e){ aviso(e.message,'err') });
+  }
+  var ESM={0:1,1:1,2:1,3:1,4:1};
+  function tono(k){ var t=null; OD.t.t.forEach(function(x){ if(x[0]===k) t=x }); return t }
+  function filaO(k,acc,txt,tag){
+    var t=tono(k)||[k,'',k,0], base=SITIOS.profesionales;
+    return '<div class="pi"><img loading="lazy" alt="" src="'+base+'img/p/'+encodeURIComponent(k)+'.jpg?v=9"><div><b>'+esc(t[2])+(tag?'<span class="tag">'+tag+'</span>':'')+'</b><span>'+esc(t[1]||'')+' · Cód. '+esc(k)+' · '+esc(OD.t.lines[t[3]]||'')+'</span></div><span></span>'+
+      '<button class="btn sec" type="button" data-oa="'+acc+'" data-k="'+esc(k)+'">'+txt+'</button></div>';
+  }
+  function nrm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') }
+  function enOutlet(){
+    var o=OD.d.o||{}, set={};
+    Object.keys(o).forEach(function(k){ set[k]=1 });
+    OC.manual.forEach(function(k){ if(OD.d.d[k]) set[k]=1 });
+    OC.excluidos.forEach(function(k){ delete set[k] });
+    return OD.t.t.map(function(t){return t[0]}).filter(function(k){return set[k]});
+  }
+  function pintarOut(){
+    var L=enOutlet(), q=nrm($('oq').value), man={}; OC.manual.forEach(function(k){man[k]=1});
+    var F=L.filter(function(k){ var t=tono(k)||[k,'',k]; return !q||nrm(t[1]+' '+t[2]+' '+k).indexOf(q)>=0 });
+    $('ocnt').textContent=L.length+' tonos'+(OC.manual.length?', '+OC.manual.length+' agregados a mano':'')+'. Los cambios de fecha se ven al guardar.';
+    $('olist').innerHTML=F.length?F.map(function(k){ return filaO(k,'sacar','Sacar',man[k]?'A mano':'') }).join(''):'<p class="muted" style="padding:10px 0">No hay tonos con ese filtro.</p>';
+    $('oexw').hidden=!OC.excluidos.length;
+    $('oexlist').innerHTML=OC.excluidos.map(function(k){ return filaO(k,'incluir','Volver a incluir','') }).join('');
+    pintarAgregar();
+    var sucioO=JSON.stringify(OC)!==OCO; $('osave').disabled=!sucioO; $('oest').textContent=sucioO?'Hay cambios sin guardar.':'Sin cambios.';
+  }
+  function pintarAgregar(){
+    var q=nrm($('oaq').value); if(!q){ $('oalist').innerHTML='<p class="muted" style="padding:6px 0">Escribí para buscar.</p>'; return }
+    var ya={}; enOutlet().forEach(function(k){ya[k]=1});
+    var R=OD.t.t.filter(function(t){ return ESM[t[3]]&&OD.d.d[t[0]]&&!ya[t[0]]&&nrm(t[1]+' '+t[2]+' '+t[0]).indexOf(q)>=0 }).slice(0,30);
+    $('oalist').innerHTML=R.length?R.map(function(t){ return filaO(t[0],'agregar','Agregar','') }).join(''):'<p class="muted" style="padding:6px 0">No hay tonos disponibles con ese nombre fuera del Outlet.</p>';
+  }
+  $('oq').addEventListener('input',pintarOut); $('oaq').addEventListener('input',pintarAgregar);
+  $('ocorte').addEventListener('change',function(){ if(this.value){ OC.corte=this.value; pintarOut() } });
+  $('vout').addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-oa]'); if(!b) return; var k=b.getAttribute('data-k'), a=b.getAttribute('data-oa');
+    var quitar=function(arr){ var i=arr.indexOf(k); if(i>=0) arr.splice(i,1) };
+    if(a==='sacar'){ if(OC.manual.indexOf(k)>=0) quitar(OC.manual); else OC.excluidos.push(k) }
+    else if(a==='incluir') quitar(OC.excluidos);
+    else if(a==='agregar'){ quitar(OC.excluidos); if((OD.d.o||{})[k]===undefined) OC.manual.push(k) }
+    pintarOut();
+  });
+  $('osave').addEventListener('click',function(){
+    var b=this; b.disabled=true; b.textContent='Recalculando…';
+    api({accion:'outletGuardar',outlet:OC}).then(function(r){
+      OC=r.outlet; OCO=JSON.stringify(OC); aviso('Outlet guardado. '+r.mensaje);
+      if(r.enOutlet){ var o={}; r.enOutlet.forEach(function(k){ o[k]=1 }); OD.d.o=o }
+      pintarOut();
+    }).catch(function(e){ aviso(e.message,'err'); b.disabled=false }).then(function(){ b.textContent='Guardar y recalcular' });
   });
 
   /* ---------- historial ---------- */

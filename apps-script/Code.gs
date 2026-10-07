@@ -529,7 +529,7 @@ function actualizar_(origen, opciones) {
   estado_(origen, true, res, c.cifras);
   if (opciones.reporte) reporte_(origen, c, tonos, publicados, avisoOutlet);
   if (avisoOutlet) avisar_('Catálogos OPI: Outlet sin actualizar', res);
-  return { ok: true, mensaje: res, cifras: c.cifras };
+  return { ok: true, mensaje: res, cifras: c.cifras, outlet: Object.keys(c.disp.o) };
 }
 
 function estado_(origen, ok, texto, cifras) {
@@ -747,7 +747,7 @@ function outletGuardar_(u, x) {
   registrar_(u.email, 'Outlet: ' + (cam.join(', ') || 'sin cambios'));
   var a;
   try { a = actualizar_(u.email); } catch (e) { a = { ok: false, mensaje: String(e.message) }; }
-  return { ok: true, outlet: cfg, mensaje: a.ok ? a.mensaje : 'Se guardó, pero la actualización falló: ' + a.mensaje };
+  return { ok: true, outlet: cfg, enOutlet: a.ok ? a.outlet : null, mensaje: a.ok ? a.mensaje : 'Se guardó, pero la actualización falló: ' + a.mensaje };
 }
 
 function cambiarFoto_(u, sku, foto) {
