@@ -527,6 +527,19 @@ function instalarActualizacion() {
   Logger.log('Disparador instalado: lunes a viernes, franjas de las ' + HORAS_AUTO.join(' y ') + ' h (Montevideo).');
 }
 
+// Para correr desde el editor: calcula todo como la actualización real pero no publica nada.
+function pruebaActualizacion() {
+  var P = REPOS.profesionales, prods = productosPBI_(), out = dax_(Q_OUTLET);
+  var tonos = JSON.parse(leerArchivo_(P, 'data/tonos.json').texto), previo = JSON.parse(leerArchivo_(P, 'data/disponibles.json').texto);
+  var tope = JSON.parse(leerArchivo_(P, 'tools/outlet_tope.json').texto || '{}');
+  var c = calcular_(tonos, previo, tope, prods, out);
+  Logger.log(c.resumen + (c.freno ? ' FRENO' : ''));
+  var im = {}; prods.forEach(function (r) { im[String(r.IMESI)] = (im[String(r.IMESI)] || 0) + 1; });
+  Logger.log('Valores de IMESI: ' + JSON.stringify(im));
+  var dif = Object.keys(c.disp.d).filter(function (k) { return previo.d[k] !== undefined && Math.abs(previo.d[k] - c.disp.d[k]) > 0.005; });
+  Logger.log('Precios distintos a los publicados: ' + dif.slice(0, 15).map(function (k) { return k + ' ' + previo.d[k] + '→' + c.disp.d[k]; }).join(', '));
+}
+
 // Para correr desde el editor: muestra las columnas de PbiProductos y cuál se usa como nombre.
 function diagnosticoPBI() {
   var prods = productosPBI_();
@@ -574,8 +587,11 @@ function sinPublicar_() {
   tonos.t.forEach(function (t) { ya[t[0]] = 1; });
   var cn = prods[0] ? colNombre_(prods[0]) : null, desc = descartados_();
   var lista = prods.filter(function (r) { return !ya[r.sku]; }).map(function (r) {
-    var nom = cn ? String(r[cn] || '').trim() : '';
-    return { sku: r.sku, nombre: nom, linea: String(r.Linea || ''), precio: !!r.pg, sugerida: lineaSugerida_(r.Linea, nom), desc: !!desc[r.sku] };
+    var nom = cn ? String(r[cn] || '').trim() : '', cod = '';
+    // En el sistema el nombre viene como "FI641 - OPI FLEX ...": se separa el código corto.
+    var m = /^([A-Z0-9]{2,12})\s+-\s+(.+)$/.exec(nom);
+    if (m) { cod = m[1]; nom = m[2]; }
+    return { sku: r.sku, nombre: nom, codigo: cod, linea: String(r.Linea || ''), precio: !!r.pg, sugerida: lineaSugerida_(r.Linea, nom), desc: !!desc[r.sku] };
   });
   lista.sort(function (a, b) { return (a.linea + a.nombre).localeCompare(b.linea + b.nombre); });
   return { ok: true, productos: lista, lines: tonos.lines, fams: tonos.fams, cols: tonos.cols };
