@@ -74,6 +74,10 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
 .log small{color:var(--mute);display:block}
 .muted{color:var(--mute);font-size:13px}
+.cathd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.cathd small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.cathd b{font-size:20px}
+.cathd .btn{text-decoration:none;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -111,6 +115,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   <div id="gmsg" class="msg" hidden></div>
 
   <div id="vcat">
+    <div class="cathd"><div><small>Catálogo</small><b id="catname"></b></div><a class="btn sec" id="catweb" href="#" target="_blank" rel="noopener">Abrir web ↗</a></div>
     <div class="card">
       <h2>Pedidos por WhatsApp</h2>
       <p class="sub">A dónde llegan los pedidos. Si hay más de un número, la clienta elige a quién enviarlo.</p>
@@ -234,6 +239,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   function cargarCat(c){
     $('plist').innerHTML='<p class="muted">Cargando…</p>'; $('tels').innerHTML='';
     var base=SITIOS[c];
+    $('catname').textContent=NOMBRES[c]; $('catweb').href=base;
     Promise.all([
       api({accion:'leer',catalogo:c}),
       DATOS[c]?Promise.resolve(DATOS[c]):Promise.all([fetch(base+'data/tonos.json').then(function(r){return r.json()}),fetch(base+'data/disponibles.json',{cache:'no-cache'}).then(function(r){return r.json()})]).then(function(x){ DATOS[c]={t:x[0],d:x[1]}; return DATOS[c] })
