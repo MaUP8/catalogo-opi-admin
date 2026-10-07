@@ -50,7 +50,7 @@ GitHub: data/config.json y data/ajustes.json de cada catálogo
    - Ejecutar como: *Yo*.
    - Quién tiene acceso: *Cualquier persona*. El acceso real lo controla el mail + PIN.
    - Autorizar los permisos que pide Google y copiar la URL que termina en `/exec`.
-5. **Conectar el portal.** En `index.html` poner esa URL en `API_DEFAULT` y publicar.
+5. **Conectar el portal** (hecho: implementación "Portal v1"). En `index.html` poner esa URL en `API_DEFAULT` y publicar.
    - Mientras tanto se puede abrir una vez el portal con `?api=URL`.
 
 ## Mantenimiento
