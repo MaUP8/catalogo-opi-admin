@@ -438,18 +438,21 @@ function calcular_(tonos, previoDisp, tope, prods, outletRows) {
   var altas = Object.keys(D).filter(function (k) { return !(k in previo); });
   var bajas = Object.keys(previo).filter(function (k) { return !(k in D); });
   var cambios = Object.keys(D).filter(function (k) { return (k in previo) && Math.abs(D[k] - previo[k]) > 0.005; });
-  var nOut = Object.keys(O).length, uOut = Object.keys(O).reduce(function (a, k) { return a + O[k]; }, 0);
+  var nOut = Object.keys(O).length;
   return {
     disp: { d: D, pp: PP, o: O }, tope: topeNuevo,
     freno: Object.keys(previo).length > 0 && Object.keys(D).length < 0.6 * Object.keys(previo).length,
     resumen: 'Disponibles ' + Object.keys(D).length + ' (antes ' + Object.keys(previo).length + '): altas ' + altas.length +
       ', bajas ' + bajas.length + ', cambios de precio ' + cambios.length + ', sin precio ' + sinPrecio.length +
       ', con precio público ' + Object.keys(PP).length + ', Outlet ' + nOut + ' tonos.',
-    cifras: { disponibles: Object.keys(D).length, altas: altas.length, bajas: bajas.length, precios: cambios.length, outlet: nOut, outletUnid: uOut }
+    cifras: { disponibles: Object.keys(D).length, altas: altas.length, bajas: bajas.length, precios: cambios.length, outlet: nOut },
+    detalle: { altas: altas, bajas: bajas, cambios: cambios.map(function (k) { return [k, previo[k], D[k]]; }), sinPrecio: sinPrecio }
   };
 }
 
-function actualizar_(origen) {
+// opciones.reporte: manda el resumen por mail al administrador (corridas automáticas y "Actualizar ahora").
+function actualizar_(origen, opciones) {
+  opciones = opciones || {};
   var P = REPOS.profesionales, I = REPOS.interior;
   var prods = productosPBI_(), outletRows = null, avisoOutlet = '';
   try { outletRows = dax_(Q_OUTLET); } catch (e) { avisoOutlet = ' Outlet sin actualizar (' + String(e.message).slice(0, 120) + ').'; }
@@ -481,6 +484,7 @@ function actualizar_(origen) {
   }
   var res = c.resumen + avisoOutlet + (publicados.length ? ' Publicado en ' + publicados.join(' e ') + '.' : ' Sin cambios para publicar.');
   estado_(origen, true, res, c.cifras);
+  if (opciones.reporte) reporte_(origen, c, tonos, publicados, avisoOutlet);
   if (avisoOutlet) avisar_('Catálogos OPI: Outlet sin actualizar', res);
   return { ok: true, mensaje: res, cifras: c.cifras };
 }
@@ -488,6 +492,39 @@ function actualizar_(origen) {
 function estado_(origen, ok, texto, cifras) {
   props_().setProperty('ULTIMA_ACT', JSON.stringify({ f: new Date().toISOString(), origen: origen, ok: ok, t: texto, c: cifras || null }));
   registrar_(origen === 'automática' ? 'sistema' : origen, (ok ? 'Actualización: ' : 'Actualización con problema: ') + texto);
+}
+
+function reporte_(origen, c, tonos, publicados, avisoOutlet) {
+  try {
+    var to = props_().getProperty('ADMIN_EMAIL');
+    if (!to) return;
+    var nom = {}; tonos.t.forEach(function (t) { nom[t[0]] = (t[1] ? t[1] + ' · ' : '') + t[2]; });
+    var $ = function (v) { return '$ ' + Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
+    var esc = function (x) { return String(x).replace(/[&<>]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]; }); };
+    var d = c.detalle, cf = c.cifras;
+    function lista(titulo, items, fmt) {
+      if (!items.length) return '';
+      var max = 40, h = '<h3 style="font-size:14px;margin:18px 0 6px">' + titulo + ' (' + items.length + ')</h3><ul style="margin:0;padding-left:18px">';
+      items.slice(0, max).forEach(function (x) { h += '<li>' + fmt(x) + '</li>'; });
+      if (items.length > max) h += '<li>… y ' + (items.length - max) + ' más</li>';
+      return h + '</ul>';
+    }
+    var cuando = ahora_('dd/MM HH:mm');
+    var html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#1d1522">' +
+      '<p style="margin:0 0 10px"><b>Actualización ' + (origen === 'automática' ? 'automática' : 'manual (' + esc(origen) + ')') + ' · ' + cuando + '</b></p>' +
+      '<p style="margin:0">Disponibles: <b>' + cf.disponibles + '</b> · Altas: ' + cf.altas + ' · Bajas: ' + cf.bajas +
+      ' · Cambios de precio: ' + cf.precios + ' · Outlet: ' + cf.outlet + ' tonos</p>' +
+      '<p style="margin:6px 0 0;color:#6f6475">' + (publicados.length ? 'Publicado en ' + publicados.join(' e ') + '.' : 'Sin cambios para publicar.') + esc(avisoOutlet) + '</p>' +
+      lista('Altas', d.altas, function (k) { return esc(nom[k] || k) + ' <span style="color:#6f6475">(' + k + ')</span>'; }) +
+      lista('Bajas', d.bajas, function (k) { return esc(nom[k] || k) + ' <span style="color:#6f6475">(' + k + ')</span>'; }) +
+      lista('Cambios de precio profesional', d.cambios, function (x) { return esc(nom[x[0]] || x[0]) + ': ' + $(x[1]) + ' → <b>' + $(x[2]) + '</b>'; }) +
+      lista('Con stock pero sin precio (no se muestran)', d.sinPrecio, function (k) { return esc(nom[k] || k) + ' <span style="color:#6f6475">(' + k + ')</span>'; }) +
+      '<p style="margin:20px 0 0;font-size:13px"><a href="https://maup8.github.io/catalogo-opi/">Catálogo profesionales</a> · ' +
+      '<a href="https://maup8.github.io/catalogo-opi-interior/">Catálogo interior</a> · <a href="https://maup8.github.io/catalogo-opi-admin/">Portal</a></p></div>';
+    var asunto = 'Catálogos OPI · ' + cuando + ' · ' + cf.disponibles + ' disponibles' +
+      (cf.altas || cf.bajas || cf.precios ? ' (' + [cf.altas ? '+' + cf.altas : '', cf.bajas ? '-' + cf.bajas : '', cf.precios ? cf.precios + ' precios' : ''].filter(String).join(', ') + ')' : ', sin cambios');
+    MailApp.sendEmail({ to: to, subject: asunto, htmlBody: html, body: c.resumen, name: 'Catálogos OPI' });
+  } catch (e) { /* el reporte es secundario */ }
 }
 
 function avisar_(asunto, texto) {
@@ -498,7 +535,7 @@ function avisar_(asunto, texto) {
 }
 
 function actualizarDesdePortal_(u) {
-  try { return actualizar_(u.email); }
+  try { return actualizar_(u.email, { reporte: true }); }
   catch (e) { estado_(u.email, false, String(e.message)); return { ok: false, mensaje: String(e.message) }; }
 }
 
@@ -512,7 +549,7 @@ function actualizacionProgramada() {
   lock.waitLock(120000);
   try {
     p.setProperty('ULTIMA_FRANJA', franja);
-    actualizar_('automática');
+    actualizar_('automática', { reporte: true });
   } catch (e) {
     estado_('automática', false, String(e.message));
     avisar_('Catálogos OPI: la actualización automática falló', String(e.message));
