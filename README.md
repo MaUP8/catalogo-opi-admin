@@ -14,6 +14,11 @@ Desde el portal se cambian:
 
 Stock y precios **no** se tocan acá: vienen del sistema dos veces por día.
 
+Además:
+
+- **Actualización automática.** El backend consulta el modelo publicado de Power BI (PBG-BI) de lunes a viernes entre las 8 y las 9 y entre las 12 y las 13. Recalcula disponibles, precios (profesional y consumidor final) y Outlet, y publica en los dos catálogos. Si los disponibles caen más de 40 % no publica y avisa por mail. En Historial se ve la última corrida y hay un botón *Actualizar ahora*.
+- **Sin publicar.** Lista los productos OPI con stock en el sistema que no están en los catálogos, sin cantidades. Desde ahí se publican con nombre, línea, familia, colección y foto: la foto se recorta y centra sola en 440×760 con fondo blanco. Los que no van se marcan *No va* y pasan a Descartados.
+
 Cada cambio queda como commit en el repo del catálogo, en `data/config.json` o `data/ajustes.json`. El catálogo lo muestra en aproximadamente un minuto.
 
 ## Cómo está armado
@@ -52,6 +57,12 @@ GitHub: data/config.json y data/ajustes.json de cada catálogo
    - Autorizar los permisos que pide Google y copiar la URL que termina en `/exec`.
 5. **Conectar el portal** (hecho: implementación "Portal v1"). En `index.html` poner esa URL en `API_DEFAULT` y publicar.
    - Mientras tanto se puede abrir una vez el portal con `?api=URL`.
+
+6. **Power BI.** Agregar a las propiedades del script los datos de la app de Azure que ya usa el conector PBG-BI publicado:
+   - `PBI_TENANT_ID`, `PBI_CLIENT_ID`, `PBI_CLIENT_SECRET`;
+   - `PBI_DATASET_ID` y, si el modelo está en un área de trabajo, `PBI_WORKSPACE_ID`;
+   - opcional: `PBI_COL_NOMBRE`, la columna de `PbiProductos` con el nombre del producto, si la detección automática no acierta.
+7. **Disparador.** En el editor, elegir la función `diagnosticoPBI` y Ejecutar: el registro muestra las columnas y cuántos productos trae. Después ejecutar `instalarActualizacion` una sola vez.
 
 ## Mantenimiento
 

@@ -74,6 +74,19 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
 .log small{color:var(--mute);display:block}
 .muted{color:var(--mute);font-size:13px}
+.modal{position:fixed;inset:0;z-index:9;background:rgba(29,21,34,.5);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px}
+.mbox{background:var(--ground);border-radius:16px;padding:20px;width:100%;max-width:720px}
+.mbox h2{margin:0 0 4px;font-size:18px}
+.pgrid{display:grid;grid-template-columns:180px 1fr;gap:18px}
+@media(max-width:560px){.pgrid{grid-template-columns:1fr}.pfoto{max-width:200px;margin:0 auto}}
+.pfoto canvas{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#fff;display:block}
+.pcampos input,.pcampos select{margin-bottom:12px}
+.pcampos input[type=color]{width:64px;height:40px;padding:2px}
+.pbtns{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.ni{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line)}
+.ni b{display:block;font-weight:600;font-size:14px}.ni span{font-size:12px;color:var(--mute)}
+.desc summary{cursor:pointer;padding:12px 2px;color:var(--mute);font-weight:600;font-size:14px}
+.ni .tag.warn{background:#fff4e0;color:var(--warn)}
 .cathd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
 .cathd small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .cathd b{font-size:20px}
@@ -106,6 +119,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   <nav id="tabs">
     <button type="button" data-v="profesionales" aria-pressed="true">Profesionales</button>
     <button type="button" data-v="interior" aria-pressed="false">Interior del país</button>
+    <button type="button" data-v="nuevos" aria-pressed="false">Sin publicar</button>
     <button type="button" data-v="usuarios" aria-pressed="false" id="tusr" hidden>Usuarios</button>
     <button type="button" data-v="historial" aria-pressed="false">Historial</button>
   </nav>
@@ -167,10 +181,49 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     </div>
   </div>
 
+  <div id="vnue" hidden>
+    <div class="card">
+      <h2>Productos con stock fuera del catálogo</h2>
+      <p class="sub">Productos OPI con stock en el sistema que todavía no están en los catálogos. Al publicar uno, entra en los dos catálogos con la foto que subas; precio y stock siguen viniendo del sistema.</p>
+      <div class="tools"><input type="search" id="nq" placeholder="Buscar por nombre o código"><button class="btn sec" type="button" id="nrec">Volver a buscar</button></div>
+      <div class="plist" id="nlist"><p class="muted">Consultando el sistema…</p></div>
+    </div>
+  </div>
+
   <div id="vlog" hidden>
+    <div class="card" id="acard">
+      <h2>Actualización desde el sistema</h2>
+      <p class="sub">Stock, precios y Outlet se actualizan solos de lunes a viernes, entre las 8 y las 9 y entre las 12 y las 13.</p>
+      <p id="aest" class="muted" style="margin:0 0 12px"></p>
+      <button class="btn sec" type="button" id="aact">Actualizar ahora</button>
+    </div>
     <div class="card"><h2>Historial</h2><p class="sub">Últimos cambios hechos desde el portal.</p><ul class="log" id="llist" style="list-style:none;padding:0;margin:0"></ul></div>
   </div>
 </main>
+
+<div class="modal" id="pub" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="ptit">
+  <h2 id="ptit">Publicar producto</h2>
+  <p class="sub" id="psub"></p>
+  <form id="pfrm">
+    <div class="pgrid">
+      <div class="pfoto">
+        <canvas id="pcan" width="440" height="760" aria-label="Vista previa de la foto"></canvas>
+        <label class="btn sec" style="display:block;text-align:center;margin-top:8px">Elegir foto<input type="file" id="pfile" accept="image/*" hidden></label>
+        <p class="muted" style="margin:6px 0 0">Fondo blanco, sin sombra. Se recorta y centra sola.</p>
+      </div>
+      <div class="pcampos">
+        <label class="f" for="pnom">Nombre</label><input type="text" id="pnom" maxlength="80" required>
+        <label class="f" for="pcod">Código corto (opcional)</label><input type="text" id="pcod" maxlength="20" placeholder="Ej.: NLH022">
+        <label class="f" for="plin">Línea</label><select id="plin"></select>
+        <div id="pfamw"><label class="f" for="pfam">Familia de color</label><select id="pfam"></select></div>
+        <label class="f" for="pcol">Colección</label><select id="pcol"></select>
+        <div id="phexw"><label class="f" for="phex">Color del tono</label><input type="color" id="phex" value="#cccccc"></div>
+      </div>
+    </div>
+    <div id="pmsg" class="msg err" hidden></div>
+    <div class="pbtns"><button class="btn sec" type="button" id="pcan2">Cancelar</button><button class="btn" type="submit" id="pok">Publicar en los dos catálogos</button></div>
+  </form>
+</div></div>
 
 <div class="save" id="savebar" hidden><div class="in">
   <div class="n" id="savetxt">Cambios sin guardar<span>Se publican en el catálogo en aproximadamente un minuto.</span></div>
@@ -231,8 +284,8 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   function ir(v){
     VISTA=v; sucio=false; $('savebar').hidden=true; aviso('');
     Array.prototype.forEach.call($('tabs').children,function(c){ c.setAttribute('aria-pressed',c.getAttribute('data-v')===v) });
-    $('vcat').hidden=!(v in SITIOS); $('vusr').hidden=v!=='usuarios'; $('vlog').hidden=v!=='historial';
-    if(v in SITIOS) cargarCat(v); else if(v==='usuarios') cargarUsr(); else cargarLog();
+    $('vcat').hidden=!(v in SITIOS); $('vusr').hidden=v!=='usuarios'; $('vlog').hidden=v!=='historial'; $('vnue').hidden=v!=='nuevos';
+    if(v in SITIOS) cargarCat(v); else if(v==='usuarios') cargarUsr(); else if(v==='nuevos') cargarNue(); else cargarLog();
   }
 
   /* ---------- catálogo ---------- */
@@ -365,8 +418,99 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     api({accion:'usuarioGuardar',usuario:{email:$('umail').value,nombre:$('unom').value,pin:$('upin').value,rol:$('urol2').value}}).then(function(x){ pintarUsr(x.usuarios); limpiarU(); aviso('Usuario guardado. Pasale su PIN por un canal privado.') }).catch(function(e){ aviso(e.message,'err') });
   });
 
+  /* ---------- productos sin publicar ---------- */
+  var NUE=null, PUBP=null, FOTO=null;
+  function cargarNue(){
+    $('nlist').innerHTML='<p class="muted" style="padding:10px 0">Consultando el sistema…</p>';
+    api({accion:'sinPublicar'}).then(function(r){ NUE=r; pintarNue() }).catch(function(e){ $('nlist').innerHTML=''; aviso(e.message,'err') });
+  }
+  function pintarNue(){
+    if(!NUE) return;
+    var q=$('nq').value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    var A=NUE.productos.filter(function(p){ return !q||(p.nombre+' '+p.sku+' '+p.linea).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(q)>=0 });
+    var L=A.filter(function(p){return !p.desc}), D=A.filter(function(p){return p.desc});
+    function fila(p){
+      return '<div class="ni"><div><b>'+esc(p.nombre||'(sin nombre en el sistema)')+(p.precio?'':'<span class="tag warn">Sin precio</span>')+'</b><span>Cód. '+esc(p.sku)+(p.linea?' · '+esc(p.linea):'')+'</span></div>'+
+        '<div style="white-space:nowrap">'+(p.desc?'<button class="lnk" type="button" data-des="'+esc(p.sku)+'" data-val="0">Volver a la lista</button>':
+        '<button class="lnk" type="button" data-des="'+esc(p.sku)+'" data-val="1" title="No publicar y sacarlo de esta lista">No va</button> <button class="btn sec" type="button" data-pub="'+esc(p.sku)+'">Publicar</button>')+'</div></div>';
+    }
+    $('nlist').innerHTML=(L.length?L.map(fila).join(''):'<p class="muted" style="padding:10px 0">'+(A.length?'No hay productos pendientes con ese filtro.':(NUE.productos.length?'No hay productos con ese filtro.':'Todos los productos con stock ya están en el catálogo.'))+'</p>')+
+      (D.length?'<details class="desc"><summary>Descartados ('+D.length+')</summary>'+D.map(fila).join('')+'</details>':'');
+  }
+  $('nq').addEventListener('input',pintarNue);
+  $('nrec').addEventListener('click',cargarNue);
+  $('nlist').addEventListener('click',function(ev){
+    var d=ev.target.closest('[data-des]');
+    if(d){ var k=d.getAttribute('data-des'), v=d.getAttribute('data-val')==='1'; d.disabled=true;
+      api({accion:'descartar',sku:k,valor:v}).then(function(){ NUE.productos.forEach(function(p){ if(p.sku===k) p.desc=v }); pintarNue() }).catch(function(e){ d.disabled=false; aviso(e.message,'err') }); return }
+    var b=ev.target.closest('[data-pub]'); if(!b) return;
+    var sku=b.getAttribute('data-pub'); PUBP=NUE.productos.filter(function(p){return p.sku===sku})[0]; if(!PUBP) return;
+    abrirPub();
+  });
+  function opts(arr,sel,extra){ return (extra||'')+arr.map(function(n,i){ return '<option value="'+i+'"'+(i===sel?' selected':'')+'>'+esc(n)+'</option>' }).join('') }
+  function esTono(l){ return l>=0&&l<=4 }
+  function abrirPub(){
+    var p=PUBP; FOTO=null; $('pmsg').hidden=true; $('pfrm').reset();
+    $('psub').textContent='Cód. '+p.sku+(p.linea?' · en el sistema: '+p.linea:'')+(p.precio?'':' · Sin precio en el sistema: no se va a ver hasta que lo tenga.');
+    $('pnom').value=p.nombre||'';
+    $('plin').innerHTML=opts(NUE.lines,p.sugerida);
+    $('pfam').innerHTML=opts(NUE.fams,-1,'<option value="-1">Elegí la familia…</option>');
+    $('pcol').innerHTML=opts(NUE.cols,-1,'<option value="-1">Sin colección</option>');
+    var c=$('pcan').getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,440,760); c.fillStyle='#b7aebb'; c.font='600 28px Arial'; c.textAlign='center'; c.fillText('Sin foto',220,390);
+    lin(); $('pub').hidden=false; $('pnom').focus();
+  }
+  function lin(){ var t=esTono(+$('plin').value); $('pfamw').hidden=!t; $('phexw').hidden=!t }
+  $('plin').addEventListener('change',lin);
+  $('pfrm').addEventListener('change',function(){ $('pmsg').hidden=true });
+  function cerrarPub(){ $('pub').hidden=true; PUBP=null }
+  $('pcan2').addEventListener('click',cerrarPub);
+  $('pub').addEventListener('click',function(ev){ if(ev.target===this) cerrarPub() });
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'&&!$('pub').hidden) cerrarPub() });
+  // Foto: se recortan los márgenes blancos y se centra en 440x760 con fondo blanco, como las del catálogo.
+  $('pfile').addEventListener('change',function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    var img=new Image(), url=URL.createObjectURL(f);
+    img.onload=function(){
+      URL.revokeObjectURL(url);
+      var k=Math.min(1,1400/Math.max(img.width,img.height)), w=Math.round(img.width*k), h=Math.round(img.height*k);
+      var t=document.createElement('canvas'); t.width=w; t.height=h; var tc=t.getContext('2d'); tc.fillStyle='#fff'; tc.fillRect(0,0,w,h); tc.drawImage(img,0,0,w,h);
+      var px=tc.getImageData(0,0,w,h).data, x0=w, y0=h, x1=-1, y1=-1;
+      for(var y=0;y<h;y++) for(var x=0;x<w;x++){ var i=(y*w+x)*4; if(px[i]<235||px[i+1]<235||px[i+2]<235){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y } }
+      if(x1<0){ x0=0;y0=0;x1=w-1;y1=h-1 }
+      var bw=x1-x0+1, bh=y1-y0+1, pad=28, s=Math.min((440-2*pad)/bw,(760-2*pad)/bh), dw=bw*s, dh=bh*s;
+      var c=$('pcan').getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,440,760); c.imageSmoothingQuality='high';
+      c.drawImage(t,x0,y0,bw,bh,(440-dw)/2,(760-dh)/2,dw,dh);
+      // Color: promedio de la zona media-baja del frasco (donde se ve el esmalte).
+      var d=c.getImageData(Math.round(440*.35),Math.round((760-dh)/2+dh*.62),Math.round(440*.3),Math.max(4,Math.round(dh*.18))).data, r=0,g=0,b=0,n=0;
+      for(var j=0;j<d.length;j+=4){ var mx=Math.max(d[j],d[j+1],d[j+2]); if(mx<245){ r+=d[j];g+=d[j+1];b+=d[j+2];n++ } }
+      if(n){ var hx=function(v){ v=Math.round(v/n).toString(16); return v.length<2?'0'+v:v }; $('phex').value='#'+hx(r)+hx(g)+hx(b) }
+      FOTO=$('pcan').toDataURL('image/jpeg',.86);
+    };
+    img.onerror=function(){ $('pmsg').textContent='No se pudo leer esa imagen.'; $('pmsg').hidden=false };
+    img.src=url;
+  });
+  $('pfrm').addEventListener('submit',function(ev){
+    ev.preventDefault(); var m=$('pmsg'); m.hidden=true;
+    var L=+$('plin').value, fam=+$('pfam').value;
+    if(!FOTO){ m.textContent='Falta la foto.'; m.hidden=false; return }
+    if(esTono(L)&&fam<0){ m.textContent='Elegí la familia de color.'; m.hidden=false; return }
+    var b=$('pok'); b.disabled=true; b.textContent='Publicando…';
+    var sku=PUBP.sku, nom=$('pnom').value.trim();
+    api({accion:'publicar',producto:{sku:sku,nombre:nom,codigo:$('pcod').value.trim(),linea:L,fam:esTono(L)?fam:-1,col:+$('pcol').value,hex:esTono(L)?$('phex').value.slice(1):'',foto:FOTO}}).then(function(r){
+      NUE.productos=NUE.productos.filter(function(p){return p.sku!==sku}); DATOS={}; cerrarPub(); pintarNue(); aviso(nom+': '+r.mensaje);
+    }).catch(function(e){ m.textContent=e.message; m.hidden=false }).then(function(){ b.disabled=false; b.textContent='Publicar en los dos catálogos' });
+  });
+
   /* ---------- historial ---------- */
-  function cargarLog(){ api({accion:'historial'}).then(function(r){
+  function pintarEst(u){
+    if(!u){ $('aest').textContent='Todavía no corrió desde el portal.'; return }
+    var d=new Date(u.f); $('aest').innerHTML=(u.ok?'':'<b style="color:var(--accent)">Con problema · </b>')+'Última: '+esc(d.toLocaleString('es-UY'))+' ('+esc(u.origen==='automática'?'automática':u.origen)+'). '+esc(u.t||'');
+  }
+  $('aact').addEventListener('click',function(){
+    var b=this; b.disabled=true; b.textContent='Actualizando…';
+    api({accion:'actualizar'}).then(function(r){ aviso(r.mensaje) }).catch(function(e){ aviso(e.message,'err') }).then(function(){ b.disabled=false; b.textContent='Actualizar ahora'; cargarLog() });
+  });
+  function cargarLog(){ api({accion:'historial'}).then(function(r){ pintarEst(r.ultima);
     $('llist').innerHTML=r.log.length?r.log.map(function(x){ var d=new Date(x.f); return '<li>'+esc(x.t)+'<small>'+esc(x.u)+' · '+d.toLocaleString('es-UY')+'</small></li>' }).join(''):'<li class="muted">Todavía no hay cambios.</li>';
   }).catch(function(e){ aviso(e.message,'err') }) }
 
