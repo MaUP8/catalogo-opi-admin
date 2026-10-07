@@ -18,6 +18,7 @@ Además:
 
 - **Actualización automática.** El backend consulta el modelo publicado de Power BI (PBG-BI) de lunes a viernes entre las 8 y las 9 y entre las 12 y las 13. Recalcula disponibles, precios (profesional y consumidor final) y Outlet, y publica en los dos catálogos. Si los disponibles caen más de 40 % no publica y avisa por mail. En Historial se ve la última corrida y hay un botón *Actualizar ahora*.
 - **Outlet.** Se elige la fecha de corte: entran los lotes con stock que ingresaron antes de esa fecha, y las reposiciones al mismo lote cuentan como nuevas (FIFO mensual). Además se pueden agregar tonos a mano, con todo su stock, y sacar tonos puntuales. La configuración vale para los dos catálogos.
+- **Stock y precios.** Cada producto muestra precio profesional y consumidor final con impuestos; el stock vendible lo ven solo los administradores, que además pueden ordenar por stock.
 - **Fotos.** Cada producto publicado tiene el botón *Foto* para reemplazar su imagen en los dos catálogos.
 - **Sin publicar.** Lista los productos OPI con stock en el sistema que no están en los catálogos, sin cantidades. Desde ahí se publican con nombre, línea, familia, colección y foto: la foto se recorta y centra sola en 440×760 con fondo blanco. Los que no van se marcan *No va* y pasan a Descartados.
 

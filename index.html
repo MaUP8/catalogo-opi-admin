@@ -55,6 +55,8 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .pi b{display:block;font-weight:600;font-size:14px}
 .pi span{font-size:12px;color:var(--mute)}
 .pi.off b,.pi.off img{opacity:.45}
+.pi .inf,.ni .inf{display:block;font-size:12px;color:var(--ink);margin-top:2px}
+.inf .st{font-weight:700;color:var(--ok)}.inf .st.bajo{color:var(--warn)}
 .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--mute);margin-left:6px}
 .save{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--ink);color:#fff;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
 .save .in{max-width:1040px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
@@ -158,6 +160,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
         <input type="search" id="pq" placeholder="Buscar por nombre o código">
         <select id="pline"></select>
         <select id="pver"><option value="">Todos</option><option value="on">Visibles</option><option value="off">Ocultos</option></select>
+        <select id="pord" hidden><option value="">Orden del catálogo</option><option value="mas">Más stock primero</option><option value="menos">Menos stock primero</option></select>
       </div>
       <div class="plist" id="plist"><p class="muted">Cargando productos…</p></div>
     </div>
@@ -337,6 +340,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     $('plist').innerHTML='<p class="muted">Cargando…</p>'; $('tels').innerHTML='';
     var base=SITIOS[c];
     $('catname').textContent=NOMBRES[c]; $('catweb').href=base;
+    cargarSis();
     Promise.all([
       api({accion:'leer',catalogo:c}),
       DATOS[c]?Promise.resolve(DATOS[c]):Promise.all([fetch(base+'data/tonos.json').then(function(r){return r.json()}),fetch(base+'data/disponibles.json',{cache:'no-cache'}).then(function(r){return r.json()})]).then(function(x){ DATOS[c]={t:x[0],d:x[1]}; return DATOS[c] })
@@ -373,6 +377,21 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   $('cbajo').addEventListener('change',function(){ CAT.cfg.bajoMinimo=this.value; marcar() });
   $('cout').addEventListener('change',function(){ CAT.cfg.outlet=this.checked; $('cout_t').textContent=this.checked?'Outlet visible en el catálogo':'Outlet apagado'; marcar() });
 
+  // Datos del sistema (stock vendible solo para administradores y precios finales), con caché de 10 minutos.
+  var SIS=null, SIST=0, SISP=null;
+  function cargarSis(){
+    if(SIS&&Date.now()-SIST<600000) return Promise.resolve(SIS);
+    if(SISP) return SISP;
+    SISP=api({accion:'sistema'}).then(function(r){ SIS=r; SIST=Date.now(); SISP=null; $('pord').hidden=!r.stock; if(CAT.catalogo&&DATOS[CAT.catalogo]) filtrar(); if(OD&&!$('vout').hidden) pintarOut(); return r }).catch(function(){ SISP=null });
+    return SISP;
+  }
+  function money(v){ return '$ '+Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.') }
+  function info(k,D,x){
+    var s=SIS&&SIS.p[k], prof=(D&&D.d.d&&D.d.d[k])||(s&&s[0])||(x&&x.prof), pub=(D&&D.d.pp&&D.d.pp[k])||(s&&s[1])||(x&&x.pub), st=s?s[2]:(x&&x.st);
+    var t=[]; if(st!=null) t.push('<b class="st'+(st<=3?' bajo':'')+'">Stock '+st+'</b>');
+    if(prof) t.push('Prof. '+money(prof)); if(pub) t.push('C. final '+money(pub));
+    return t.length?'<span class="inf">'+t.join(' · ')+'</span>':'';
+  }
   function prods(){
     var D=DATOS[CAT.catalogo], disp=D.d.d||{}, out=[];
     D.t.t.forEach(function(t){ if((t[0] in disp)||CAT.oc[t[0]]) out.push({k:t[0],code:t[1],name:t[2],line:t[3],o:!!((D.d.o||{})[t[0]])}) });
@@ -388,22 +407,24 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     var P=prods(), q=$('pq').value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''), l=$('pline').value, ver=$('pver').value, base=SITIOS[CAT.catalogo], D=DATOS[CAT.catalogo];
     var noc=P.filter(function(p){return CAT.oc[p.k]}).length;
     $('pcount').textContent=P.length+' productos con stock'+(noc?', '+noc+' ocultos':'')+'.';
+    var ord=$('pord').value, D0=DATOS[CAT.catalogo];
     var L=P.filter(function(p){
       if(l!==''&&p.line!==+l) return false;
       if(ver==='on'&&CAT.oc[p.k]) return false; if(ver==='off'&&!CAT.oc[p.k]) return false;
       return !q||(p.name+' '+p.code+' '+p.k).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(q)>=0;
     });
+    if(ord&&SIS&&SIS.stock) L.sort(function(a,b){ var x=(SIS.p[a.k]||[])[2]||0, y=(SIS.p[b.k]||[])[2]||0; return ord==='mas'?y-x:x-y });
     var h=L.slice(0,400).map(function(p){
       var on=!CAT.oc[p.k];
       return '<div class="pi'+(on?'':' off')+'"><img loading="lazy" alt="" src="'+base+'img/p/'+encodeURIComponent(p.k)+'.jpg?v=9">'+
-        '<div><b>'+esc(p.name)+(p.o?'<span class="tag">Outlet</span>':'')+'</b><span>'+esc(p.code||'')+' · Cód. '+esc(p.k)+' · '+esc(D.t.lines[p.line])+'</span></div>'+
+        '<div><b>'+esc(p.name)+(p.o?'<span class="tag">Outlet</span>':'')+'</b><span>'+esc(p.code||'')+' · Cód. '+esc(p.k)+' · '+esc(D.t.lines[p.line])+'</span>'+info(p.k,D0)+'</div>'+
         '<button class="lnk" type="button" data-foto="'+esc(p.k)+'" title="Cambiar foto">Foto</button>'+
         '<label class="sw" title="'+(on?'Visible':'Oculto')+'"><input type="checkbox" data-k="'+esc(p.k)+'"'+(on?' checked':'')+' aria-label="Mostrar '+esc(p.name)+'"></label></div>';
     }).join('');
     $('plist').innerHTML=h||'<p class="muted" style="padding:10px 0">No hay productos con ese filtro.</p>';
     if(L.length>400) $('plist').insertAdjacentHTML('beforeend','<p class="muted" style="padding:10px 0">Se muestran 400 de '+L.length+'. Usá el buscador para acotar.</p>');
   }
-  $('pq').addEventListener('input',filtrar); $('pline').addEventListener('change',filtrar); $('pver').addEventListener('change',filtrar);
+  $('pq').addEventListener('input',filtrar); $('pline').addEventListener('change',filtrar); $('pver').addEventListener('change',filtrar); $('pord').addEventListener('change',filtrar);
   $('plist').addEventListener('change',function(ev){
     var k=ev.target.getAttribute('data-k'); if(!k) return;
     if(ev.target.checked) delete CAT.oc[k]; else CAT.oc[k]=1;
@@ -475,7 +496,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     var A=NUE.productos.filter(function(p){ return !q||(p.nombre+' '+p.sku+' '+p.linea).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(q)>=0 });
     var L=A.filter(function(p){return !p.desc}), D=A.filter(function(p){return p.desc});
     function fila(p){
-      return '<div class="ni"><div><b>'+esc(p.nombre||'(sin nombre en el sistema)')+(p.precio?'':'<span class="tag warn">Sin precio</span>')+'</b><span>'+(p.codigo?esc(p.codigo)+' · ':'')+'Cód. '+esc(p.sku)+(p.linea?' · '+esc(p.linea):'')+'</span></div>'+
+      return '<div class="ni"><div><b>'+esc(p.nombre||'(sin nombre en el sistema)')+(p.precio?'':'<span class="tag warn">Sin precio</span>')+'</b><span>'+(p.codigo?esc(p.codigo)+' · ':'')+'Cód. '+esc(p.sku)+(p.linea?' · '+esc(p.linea):'')+'</span>'+info(p.sku,null,p)+'</div>'+
         '<div style="white-space:nowrap">'+(p.desc?'<button class="lnk" type="button" data-des="'+esc(p.sku)+'" data-val="0">Volver a la lista</button>':
         '<button class="lnk" type="button" data-des="'+esc(p.sku)+'" data-val="1" title="No publicar y sacarlo de esta lista">No va</button> <button class="btn sec" type="button" data-pub="'+esc(p.sku)+'">Publicar</button>')+'</div></div>';
     }
@@ -584,6 +605,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   }
   function cargarOut(){
     $('olist').innerHTML='<p class="muted">Cargando…</p>';
+    cargarSis();
     Promise.all([api({accion:'outletLeer'}),datosProf()]).then(function(r){
       OC=r[0].outlet; OCO=JSON.stringify(OC); OD=r[1]; $('ocorte').value=OC.corte; pintarOut();
     }).catch(function(e){ aviso(e.message,'err') });
@@ -592,7 +614,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   function tono(k){ var t=null; OD.t.t.forEach(function(x){ if(x[0]===k) t=x }); return t }
   function filaO(k,acc,txt,tag){
     var t=tono(k)||[k,'',k,0], base=SITIOS.profesionales;
-    return '<div class="pi"><img loading="lazy" alt="" src="'+base+'img/p/'+encodeURIComponent(k)+'.jpg?v=9"><div><b>'+esc(t[2])+(tag?'<span class="tag">'+tag+'</span>':'')+'</b><span>'+esc(t[1]||'')+' · Cód. '+esc(k)+' · '+esc(OD.t.lines[t[3]]||'')+'</span></div><span></span>'+
+    return '<div class="pi"><img loading="lazy" alt="" src="'+base+'img/p/'+encodeURIComponent(k)+'.jpg?v=9"><div><b>'+esc(t[2])+(tag?'<span class="tag">'+tag+'</span>':'')+'</b><span>'+esc(t[1]||'')+' · Cód. '+esc(k)+' · '+esc(OD.t.lines[t[3]]||'')+'</span>'+info(k,OD)+'</div><span></span>'+
       '<button class="btn sec" type="button" data-oa="'+acc+'" data-k="'+esc(k)+'">'+txt+'</button></div>';
   }
   function nrm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') }

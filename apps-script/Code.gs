@@ -53,7 +53,8 @@ function rutear_(q) {
     case 'guardar': return guardar_(u, q.catalogo, q.archivos, q.resumen);
     case 'historial': return { ok: true, log: log_(), ultima: JSON.parse(props_().getProperty('ULTIMA_ACT') || 'null') };
     case 'actualizar': return actualizarDesdePortal_(u);
-    case 'sinPublicar': return sinPublicar_();
+    case 'sinPublicar': return sinPublicar_(u);
+    case 'sistema': return sistema_(u);
     case 'publicar': return publicar_(u, q.producto);
     case 'descartar': return descartar_(u, q.sku, q.valor);
     case 'outletLeer': return { ok: true, outlet: outletCfg_() };
@@ -669,7 +670,28 @@ function lineaSugerida_(lin, nombre) {
   return 10;
 }
 
-function sinPublicar_() {
+// Precios finales (con IMESI si aplica, los tonos siempre, e IVA) y stock vendible desde el sistema.
+// Las cantidades de stock solo van a administradores.
+var LINEAS_PBI_ESMALTE = { 'NAIL LACQUER': 1, 'INFINITE SHINE': 1, 'GEL COLOR': 1, 'NATURE STRONG': 1, 'RAPIDRY': 1, 'RAPI DRY': 1 };
+function preciosFinales_(r) {
+  var aplica = String(r.IMESI || '').trim().toUpperCase().charAt(0) === 'A' || !!LINEAS_PBI_ESMALTE[String(r.Linea || '').toUpperCase()];
+  var f = (aplica ? IMESI : 1) * IVA;
+  return { prof: r.pg ? r2_(r2_(r.pg) * f) : null, pub: r.po ? r2_(r2_(r.po) * f) : null };
+}
+function sistema_(u) {
+  var c = CacheService.getScriptCache(), raw = c.get('SISTEMA'), datos;
+  if (raw) datos = JSON.parse(raw);
+  else {
+    datos = { f: new Date().toISOString(), p: {} };
+    productosPBI_().forEach(function (r) { var x = preciosFinales_(r); datos.p[r.sku] = [x.prof, x.pub, Math.round(+r.st || 0)]; });
+    try { c.put('SISTEMA', JSON.stringify(datos), 600); } catch (e) { /* muy grande para la caché: se recalcula */ }
+  }
+  var adm = u.rol === 'admin', out = {};
+  Object.keys(datos.p).forEach(function (k) { var x = datos.p[k]; out[k] = adm ? x : [x[0], x[1]]; });
+  return { ok: true, f: datos.f, stock: adm, p: out };
+}
+
+function sinPublicar_(u) {
   var prods = productosPBI_();
   var tonos = JSON.parse(leerArchivo_(REPOS.profesionales, 'data/tonos.json').texto), ya = {};
   tonos.t.forEach(function (t) { ya[t[0]] = 1; });
@@ -679,7 +701,9 @@ function sinPublicar_() {
     // En el sistema el nombre viene como "FI641 - OPI FLEX ...": se separa el código corto.
     var m = /^([A-Z0-9]{2,12})\s+-\s+(.+)$/.exec(nom);
     if (m) { cod = m[1]; nom = m[2]; }
-    return { sku: r.sku, nombre: nom, codigo: cod, linea: String(r.Linea || ''), precio: !!r.pg, sugerida: lineaSugerida_(r.Linea, nom), desc: !!desc[r.sku] };
+    var pf = preciosFinales_(r), o = { sku: r.sku, nombre: nom, codigo: cod, linea: String(r.Linea || ''), precio: !!r.pg, prof: pf.prof, pub: pf.pub, sugerida: lineaSugerida_(r.Linea, nom), desc: !!desc[r.sku] };
+    if (u && u.rol === 'admin') o.st = Math.round(+r.st || 0);
+    return o;
   });
   lista.sort(function (a, b) { return (a.linea + a.nombre).localeCompare(b.linea + b.nombre); });
   return { ok: true, productos: lista, lines: tonos.lines, fams: tonos.fams, cols: tonos.cols };
