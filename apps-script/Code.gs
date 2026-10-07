@@ -335,16 +335,33 @@ var Q_PRODUCTOS = [
   '  [st] > 1)'
 ].join('\n');
 
-var Q_OUTLET = [
-  'EVALUATE',
-  'VAR L = {"NAIL LACQUER","INFINITE SHINE","GEL COLOR","NATURE STRONG"}',
-  'VAR base = FILTER(ADDCOLUMNS(SALPLU, "lin", RELATED(PbiProductos[Linea])), [lin] IN L)',
-  'VAR fin = MAXX(base, SALPLU[EMP04.Empfecfinp])',
-  'VAR cur = GROUPBY(FILTER(base, SALPLU[EMP04.Empfecfinp] = fin && SALPLU[DepoCod] = 1 && SALPLU[EstCod] = "STF" && SALPLU[SPLUSaldo] > 0), SALPLU[ProCod], SALPLU[LoteNro], "u", SUMX(CURRENTGROUP(), SALPLU[SPLUSaldo]))',
-  'VAR h = SUMMARIZE(FILTER(base, SALPLU[SPLUSaldo] > 0), SALPLU[ProCod], SALPLU[LoteNro], "f1", MIN(SALPLU[EMP04.Empfecfinp]))',
-  'VAR old = SELECTCOLUMNS(FILTER(NATURALINNERJOIN(cur, h), [f1] < DATE(2022,1,1)), "p", SALPLU[ProCod], "lu", SALPLU[LoteNro] & ":" & [u])',
-  'RETURN ADDCOLUMNS(DISTINCT(SELECTCOLUMNS(old, "sku", [p])), "lotes", VAR s = [sku] RETURN CONCATENATEX(FILTER(old, [p] = s), [lu], ";"))'
-].join('\n');
+// Outlet por lote: unidades que siguen siendo anteriores a la fecha de corte. Con stock mensual por lote,
+// lo que queda del stock viejo (FIFO) es el mínimo del saldo desde el cierre anterior al corte hasta hoy;
+// si el lote desapareció en algún cierre, lo que hay ahora es todo nuevo. Se cuenta todo depósito en STF
+// (las transferencias no cambian el total) y se topea con lo que hay hoy en el depósito 1.
+function qOutlet_(corte) {
+  var p = corte.split('-');
+  return [
+    'EVALUATE',
+    'VAR corte = DATE(' + (+p[0]) + ',' + (+p[1]) + ',' + (+p[2]) + ')',
+    'VAR L = {"NAIL LACQUER","INFINITE SHINE","GEL COLOR","NATURE STRONG"}',
+    'VAR base = FILTER(ADDCOLUMNS(SALPLU, "lin", RELATED(PbiProductos[Linea])), [lin] IN L && SALPLU[EstCod] = "STF")',
+    'VAR fin = MAXX(base, SALPLU[EMP04.Empfecfinp])',
+    'VAR ini = MAXX(FILTER(base, SALPLU[EMP04.Empfecfinp] < corte), SALPLU[EMP04.Empfecfinp])',
+    'VAR nsnap = COUNTROWS(DISTINCT(SELECTCOLUMNS(FILTER(base, SALPLU[EMP04.Empfecfinp] >= ini), "f", SALPLU[EMP04.Empfecfinp])))',
+    'VAR cur = GROUPBY(FILTER(base, SALPLU[EMP04.Empfecfinp] = fin && SALPLU[DepoCod] = 1 && SALPLU[SPLUSaldo] > 0), SALPLU[ProCod], SALPLU[LoteNro], "u", SUMX(CURRENTGROUP(), SALPLU[SPLUSaldo]))',
+    'VAR hist = GROUPBY(FILTER(base, SALPLU[EMP04.Empfecfinp] >= ini), SALPLU[ProCod], SALPLU[LoteNro], SALPLU[EMP04.Empfecfinp], "s", SUMX(CURRENTGROUP(), SALPLU[SPLUSaldo]))',
+    'VAR agg = GROUPBY(FILTER(hist, [s] > 0), SALPLU[ProCod], SALPLU[LoteNro], "mn", MINX(CURRENTGROUP(), [s]), "n", COUNTX(CURRENTGROUP(), [s]))',
+    'VAR r = FILTER(NATURALINNERJOIN(cur, agg), [n] >= nsnap)',
+    'RETURN SELECTCOLUMNS(r, "sku", SALPLU[ProCod] & "", "lote", SALPLU[LoteNro] & "", "viejo", MIN([mn], [u]), "u", [u])'
+  ].join('\n');
+}
+
+var OUTLET_DEF = { corte: '2022-01-01', manual: [], excluidos: [] };
+function outletCfg_() {
+  var c = JSON.parse(props_().getProperty('OUTLET_CFG') || 'null') || {};
+  return { corte: c.corte || OUTLET_DEF.corte, manual: c.manual || [], excluidos: c.excluidos || [] };
+}
 
 function productosPBI_() {
   var vistos = {}, out = [];
@@ -374,14 +391,17 @@ function jsonIndent0_(o) {
 }
 
 // Calcula disponibles.json y el tope del Outlet. Puro (sin E/S) para poder probarlo aparte.
-function calcular_(tonos, previoDisp, tope, prods, outletRows) {
+// tope: unidades viejas por SKU y lote de corridas anteriores con la MISMA fecha de corte (o null si cambió).
+// cfgOut: { manual: [sku], excluidos: [sku] }.
+function calcular_(tonos, previoDisp, tope, prods, outletRows, cfgOut) {
+  cfgOut = cfgOut || { manual: [], excluidos: [] };
   var linea = {};
   tonos.t.forEach(function (t) { linea[t[0]] = t[3]; });
   var previo = (previoDisp && previoDisp.d) || {};
   var stock = {}, orden = [];
   prods.forEach(function (r) {
     var pg = r.pg == null || r.pg === '' ? null : r2_(r.pg), po = r.po == null || r.po === '' ? null : r2_(r.po);
-    stock[r.sku] = [pg, po, String(r.IMESI || '').trim().toUpperCase().charAt(0) === 'A'];
+    stock[r.sku] = [pg, po, String(r.IMESI || '').trim().toUpperCase().charAt(0) === 'A', +r.st || 0];
     orden.push(r.sku);
   });
   var netos = {};
@@ -409,20 +429,12 @@ function calcular_(tonos, previoDisp, tope, prods, outletRows) {
   });
   var o = {}, topeNuevo = null;
   if (outletRows) {
-    var hoy = {};
-    outletRows.forEach(function (r) {
-      var s = String(r.sku).trim(); hoy[s] = {};
-      String(r.lotes || '').split(';').forEach(function (l) {
-        var i = l.lastIndexOf(':'); if (i < 0) return;
-        hoy[s][l.slice(0, i)] = parseFloat(l.slice(i + 1));
-      });
-    });
+    // Con la misma fecha de corte solo cuentan los lotes que ya estaban y nunca suben; si cambió la fecha, se rearma.
     topeNuevo = {};
-    Object.keys(tope).forEach(function (s) {
-      Object.keys(tope[s]).forEach(function (l) {
-        var t = Math.min(tope[s][l], (hoy[s] && hoy[s][l]) || 0);
-        if (t > 0) { topeNuevo[s] = topeNuevo[s] || {}; topeNuevo[s][l] = Math.trunc(t); }
-      });
+    outletRows.forEach(function (r) {
+      var s = String(r.sku).trim(), l = String(r.lote).trim(), v = Math.trunc(+r.viejo || 0);
+      if (tope) { if (!(tope[s] && tope[s][l] != null)) return; v = Math.min(v, tope[s][l]); }
+      if (v > 0) { topeNuevo[s] = topeNuevo[s] || {}; topeNuevo[s][l] = v; }
     });
     Object.keys(topeNuevo).forEach(function (s) {
       if ((s in d) && LINEAS_ESMALTE[linea[s]]) {
@@ -433,6 +445,11 @@ function calcular_(tonos, previoDisp, tope, prods, outletRows) {
     var po2 = (previoDisp && previoDisp.o) || {};
     Object.keys(po2).forEach(function (k) { if (k in d) o[k] = po2[k]; });
   }
+  // Ajustes a mano desde el portal: tonos que entran sin importar la fecha (con todo su stock) y tonos que no van.
+  (cfgOut.manual || []).forEach(function (k) {
+    if ((k in d) && LINEAS_ESMALTE[linea[k]] && stock[k]) o[k] = Math.max(o[k] || 0, Math.trunc(stock[k][3]));
+  });
+  (cfgOut.excluidos || []).forEach(function (k) { delete o[k]; });
   var D = {}, PP = {}, O = {};
   tonos.t.forEach(function (t) { var k = t[0]; if (k in d) { D[k] = d[k]; if (k in pp) PP[k] = pp[k]; if (k in o) O[k] = o[k]; } });
   var altas = Object.keys(D).filter(function (k) { return !(k in previo); });
@@ -455,10 +472,12 @@ function actualizar_(origen, opciones) {
   opciones = opciones || {};
   var P = REPOS.profesionales, I = REPOS.interior;
   var prods = productosPBI_(), outletRows = null, avisoOutlet = '';
-  try { outletRows = dax_(Q_OUTLET); } catch (e) { avisoOutlet = ' Outlet sin actualizar (' + String(e.message).slice(0, 120) + ').'; }
+  var oc = outletCfg_(), pr = props_();
+  try { outletRows = dax_(qOutlet_(oc.corte)); } catch (e) { avisoOutlet = ' Outlet sin actualizar (' + String(e.message).slice(0, 120) + ').'; }
   var fT = leerArchivo_(P, 'data/tonos.json'), fD = leerArchivo_(P, 'data/disponibles.json'), fO = leerArchivo_(P, 'tools/outlet_tope.json');
   var tonos = JSON.parse(fT.texto), previo = fD.texto ? JSON.parse(fD.texto) : null, tope = fO.texto ? JSON.parse(fO.texto) : {};
-  var c = calcular_(tonos, previo, tope, prods, outletRows);
+  var mismaFecha = (pr.getProperty('TOPE_CORTE') || OUTLET_DEF.corte) === oc.corte;
+  var c = calcular_(tonos, previo, mismaFecha ? tope : null, prods, outletRows, oc);
   var hoy = ahora_('yyyy-MM-dd'), cuando = ahora_('yyyy-MM-dd HH:mm');
   if (c.freno) {
     var msj = 'Freno: los disponibles caen más de 40 %. No se publicó nada. ' + c.resumen;
@@ -475,6 +494,7 @@ function actualizar_(origen, opciones) {
     publicados.push('profesionales');
     if (c.tope && jsonIndent0_(c.tope) !== jsonIndent0_(tope)) escribir_(P, 'tools/outlet_tope.json', b64_(jsonIndent0_(c.tope)), msg, fO.sha, AUTOR_AUTO);
   }
+  if (c.tope) pr.setProperty('TOPE_CORTE', oc.corte);
   // Interior: mismos disponibles y la misma lista de productos.
   var iD = leerArchivo_(I, 'data/disponibles.json'), iT = leerArchivo_(I, 'data/tonos.json'), txt = JSON.stringify(nuevo);
   if (iT.texto !== fT.texto) escribir_(I, 'data/tonos.json', b64_(fT.texto), msg, iT.sha, AUTOR_AUTO);
@@ -566,10 +586,18 @@ function instalarActualizacion() {
 
 // Para correr desde el editor: calcula todo como la actualización real pero no publica nada.
 function pruebaActualizacion() {
-  var P = REPOS.profesionales, prods = productosPBI_(), out = dax_(Q_OUTLET);
+  var P = REPOS.profesionales, prods = productosPBI_(), oc = outletCfg_(), out = dax_(qOutlet_(oc.corte));
   var tonos = JSON.parse(leerArchivo_(P, 'data/tonos.json').texto), previo = JSON.parse(leerArchivo_(P, 'data/disponibles.json').texto);
   var tope = JSON.parse(leerArchivo_(P, 'tools/outlet_tope.json').texto || '{}');
-  var c = calcular_(tonos, previo, tope, prods, out);
+  var misma = (props_().getProperty('TOPE_CORTE') || OUTLET_DEF.corte) === oc.corte;
+  var c = calcular_(tonos, previo, misma ? tope : null, prods, out, oc);
+  var sin = calcular_(tonos, previo, null, prods, out, oc), po = previo.o || {}, so = sin.disp.o;
+  var u = function (o) { return Object.keys(o).reduce(function (a, k) { return a + o[k]; }, 0); };
+  Logger.log('Outlet publicado: ' + Object.keys(po).length + ' tonos / ' + u(po) + ' u. Con el tope guardado: ' + Object.keys(c.disp.o).length + ' / ' + u(c.disp.o) +
+    '. Recalculado desde cero (corte ' + oc.corte + '): ' + Object.keys(so).length + ' / ' + u(so));
+  Logger.log('Solo en el recalculado: ' + Object.keys(so).filter(function (k) { return !(k in po); }).map(function (k) { return k + ':' + so[k]; }).join(' '));
+  Logger.log('Solo en el publicado: ' + Object.keys(po).filter(function (k) { return !(k in so); }).map(function (k) { return k + ':' + po[k]; }).join(' '));
+  Logger.log('Distinta cantidad: ' + Object.keys(so).filter(function (k) { return (k in po) && po[k] !== so[k]; }).map(function (k) { return k + ':' + po[k] + '→' + so[k]; }).join(' '));
   Logger.log(c.resumen + (c.freno ? ' FRENO' : ''));
   var im = {}; prods.forEach(function (r) { im[String(r.IMESI)] = (im[String(r.IMESI)] || 0) + 1; });
   Logger.log('Valores de IMESI: ' + JSON.stringify(im));
@@ -585,7 +613,7 @@ function diagnosticoPBI() {
     Logger.log('Columnas: ' + Object.keys(prods[0]).join(' | '));
     Logger.log('Columna de nombre: ' + colNombre_(prods[0]) + ' -> ' + prods[0][colNombre_(prods[0])]);
   }
-  Logger.log('Outlet: ' + dax_(Q_OUTLET).length + ' tonos');
+  Logger.log('Outlet: ' + dax_(qOutlet_(outletCfg_().corte)).length + ' lotes');
 }
 
 /* ---------- productos sin publicar y publicación ---------- */
