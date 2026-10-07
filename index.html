@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Portal catálogos OPI</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}
+:root{--ground:#fff;--soft:#f4f1f5;--line:#e4dee6;--ink:#1d1522;--mute:#6f6475;--accent:#b3124f;--ok:#1f7a4d;--warn:#9a5b00;
+  --font:"Helvetica Neue",Helvetica,"Arimo",Arial,sans-serif;color-scheme:light}
+html,body{background:var(--soft);color:var(--ink);font:15px/1.45 var(--font)}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:16px}
+header{background:var(--ground);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.hd{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;padding-block:12px}
+.hd img{height:24px}
+.hd h1{font-size:18px;margin:0;font-weight:700;flex:1 1 auto}
+.hd h1 small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.who{font-size:13px;color:var(--mute);text-align:right}
+.who b{color:var(--ink);font-weight:600}
+.who .rol{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft);margin-left:4px}
+@media(max-width:560px){.who{width:100%;text-align:left;display:flex;flex-wrap:wrap;align-items:center;gap:0 4px}.who br{display:none}.who .sep{display:none}.who .lnk:first-of-type{margin-left:auto}}
+.lnk{font:inherit;font-size:13px;font-weight:600;color:var(--accent);background:none;border:0;padding:4px;cursor:pointer}
+nav{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:10px}
+nav button{flex:none;font:inherit;font-weight:600;font-size:14px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--ground);color:var(--ink);cursor:pointer}
+nav button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+main{padding-block:18px 120px}
+.card{background:var(--ground);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.card h2{font-size:17px;margin:0 0 4px}
+.card .sub{color:var(--mute);font-size:13px;margin:0 0 14px}
+label.f{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+input[type=text],input[type=email],input[type=tel],input[type=number],input[type=password],input[type=search],select{font:inherit;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--ground);color:var(--ink)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));align-items:end}
+.tels{display:flex;flex-direction:column;gap:10px}
+.tel{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center}
+@media(max-width:560px){.tel{grid-template-columns:1fr auto}.tel .tn{grid-column:1/3}}
+.btn{font:inherit;font-weight:600;padding:10px 16px;border-radius:999px;border:1px solid transparent;cursor:pointer;background:var(--accent);color:#fff}
+.btn.sec{background:var(--ground);color:var(--ink);border-color:var(--line)}
+.btn.dang{background:var(--ground);color:var(--accent);border-color:var(--line)}
+.btn[disabled]{opacity:.5;cursor:default}
+.ic[disabled]{opacity:.35;cursor:default}
+.ic{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--ground);color:var(--mute);font-size:18px;cursor:pointer}
+.sw{display:flex;align-items:center;gap:12px;cursor:pointer;font-weight:600}
+.sw input{appearance:none;width:46px;height:26px;border-radius:999px;background:#cfc6d4;position:relative;cursor:pointer;flex:none;margin:0;transition:background .15s}
+.sw input::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.sw input:checked{background:var(--ok)}.sw input:checked::after{left:23px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.tools input[type=search]{flex:1 1 220px;width:auto}
+.tools select{flex:0 1 220px;width:auto}
+.plist{display:flex;flex-direction:column;border-top:1px solid var(--line);max-height:60vh;overflow:auto}
+.pi{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line)}
+.pi img{width:34px;height:58px;object-fit:contain;background:#fff;border-radius:6px}
+.pi b{display:block;font-weight:600;font-size:14px}
+.pi span{font-size:12px;color:var(--mute)}
+.pi.off b,.pi.off img{opacity:.45}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--mute);margin-left:6px}
+.save{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--ink);color:#fff;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.save .in{max-width:1040px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.save .n{flex:1 1 200px;font-weight:600}
+.save .n span{display:block;font-weight:400;font-size:12px;color:#cfc6d4}
+.save .btn.sec{background:transparent;color:#fff;border-color:#6d6373}
+.msg{padding:10px 14px;border-radius:10px;font-size:14px;margin-bottom:14px}
+.msg.ok{background:#eef7f1;color:var(--ok)}.msg.err{background:#fbeef3;color:var(--accent)}
+.ulist{border-top:1px solid var(--line)}
+.ur{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ur div{flex:1 1 200px;min-width:0}.ur b{display:block;font-weight:600;overflow-wrap:anywhere}.ur span{font-size:12px;color:var(--mute);overflow-wrap:anywhere}
+.login{max-width:380px;margin:8vh auto;background:var(--ground);border:1px solid var(--line);border-radius:16px;padding:26px}
+.login img{height:30px;margin-bottom:12px}
+.login h1{font-size:20px;margin:0 0 4px}
+.login p{color:var(--mute);margin:0 0 18px;font-size:14px}
+.login .f + input{margin-bottom:14px}
+.log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.log small{color:var(--mute);display:block}
+.muted{color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+
+<section class="login" id="vlogin" hidden>
+  <img src="img/opi.svg" alt="OPI">
+  <h1>Portal de catálogos</h1>
+  <p>Ingresá con tu mail y tu PIN.</p>
+  <form id="flogin">
+    <label class="f" for="lmail">Mail</label>
+    <input id="lmail" type="email" autocomplete="username" required>
+    <label class="f" for="lpin">PIN</label>
+    <input id="lpin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" autocomplete="current-password" required>
+    <div id="lmsg" class="msg err" hidden></div>
+    <button class="btn" type="submit" id="lbtn" style="width:100%">Ingresar</button>
+  </form>
+</section>
+
+<div id="vapp" hidden>
+<header><div class="wrap">
+  <div class="hd">
+    <img src="img/opi.svg" alt="OPI">
+    <h1><small>Administración</small>Catálogos OPI</h1>
+    <div class="who"><b id="uname"></b><span class="rol" id="urol"></span><br><button class="lnk" id="bpin" type="button">Cambiar PIN</button><span class="sep"> · </span><button class="lnk" id="bout" type="button">Salir</button></div>
+  </div>
+  <nav id="tabs">
+    <button type="button" data-v="profesionales" aria-pressed="true">Profesionales</button>
+    <button type="button" data-v="interior" aria-pressed="false">Interior del país</button>
+    <button type="button" data-v="usuarios" aria-pressed="false" id="tusr" hidden>Usuarios</button>
+    <button type="button" data-v="historial" aria-pressed="false">Historial</button>
+  </nav>
+</div></header>
+
+<main class="wrap">
+  <div id="gmsg" class="msg" hidden></div>
+
+  <div id="vcat">
+    <div class="card">
+      <h2>Pedidos por WhatsApp</h2>
+      <p class="sub">A dónde llegan los pedidos. Si hay más de un número, la clienta elige a quién enviarlo.</p>
+      <div class="tels" id="tels"></div>
+      <p style="margin:12px 0 0"><button class="btn sec" type="button" id="addtel">+ Agregar número</button></p>
+    </div>
+    <div class="card">
+      <h2>Pedido mínimo</h2>
+      <p class="sub">Se mide a precio profesional con impuestos, sin contar los obsequios.</p>
+      <div class="row">
+        <div><label class="f" for="cmin">Monto mínimo ($)</label><input id="cmin" type="number" min="0" step="100"></div>
+        <div><label class="f" for="cbajo">Si no llega al mínimo</label>
+          <select id="cbajo"><option value="bloquea">No se puede enviar el pedido</option><option value="publico">Se envía a precio consumidor final</option></select></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Outlet 1+1</h2>
+      <p class="sub">Sección de tonos de lotes anteriores a 2022, con un regalo por cada tono comprado del mismo sistema.</p>
+      <label class="sw"><input type="checkbox" id="cout"> <span id="cout_t">Outlet visible en el catálogo</span></label>
+    </div>
+    <div class="card">
+      <h2>Productos</h2>
+      <p class="sub">Stock y precios vienen del sistema y se actualizan solos. Acá decidís qué productos se muestran. <span id="pcount"></span></p>
+      <div class="tools">
+        <input type="search" id="pq" placeholder="Buscar por nombre o código">
+        <select id="pline"></select>
+        <select id="pver"><option value="">Todos</option><option value="on">Visibles</option><option value="off">Ocultos</option></select>
+      </div>
+      <div class="plist" id="plist"><p class="muted">Cargando productos…</p></div>
+    </div>
+  </div>
+
+  <div id="vusr" hidden>
+    <div class="card">
+      <h2>Usuarios</h2>
+      <p class="sub">Quién puede entrar al portal. Los editores cambian los catálogos; solo el administrador maneja usuarios.</p>
+      <div class="ulist" id="ulist"></div>
+    </div>
+    <div class="card">
+      <h2 id="uftitle">Agregar usuario</h2>
+      <p class="sub">El PIN es de 4 a 8 números. Al editar, dejalo vacío para no cambiarlo.</p>
+      <form id="ufrm" class="row">
+        <div><label class="f" for="umail">Mail</label><input id="umail" type="email" required></div>
+        <div><label class="f" for="unom">Nombre</label><input id="unom" type="text" maxlength="60"></div>
+        <div><label class="f" for="upin">PIN</label><input id="upin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" autocomplete="new-password"></div>
+        <div><label class="f" for="urol2">Rol</label><select id="urol2"><option value="editor">Editor</option><option value="admin">Administrador</option></select></div>
+        <div style="display:flex;gap:8px"><button class="btn" type="submit">Guardar</button><button class="btn sec" type="button" id="ucancel" hidden>Cancelar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="vlog" hidden>
+    <div class="card"><h2>Historial</h2><p class="sub">Últimos cambios hechos desde el portal.</p><ul class="log" id="llist" style="list-style:none;padding:0;margin:0"></ul></div>
+  </div>
+</main>
+
+<div class="save" id="savebar" hidden><div class="in">
+  <div class="n" id="savetxt">Cambios sin guardar<span>Se publican en el catálogo en aproximadamente un minuto.</span></div>
+  <button class="btn sec" type="button" id="bdesc">Descartar</button>
+  <button class="btn" type="button" id="bsave">Guardar y publicar</button>
+</div></div>
+</div>
+
+<script>
+(function(){
+  // URL del backend (Google Apps Script). Se puede fijar acá o, mientras tanto, con ?api=URL una vez.
+  var API_DEFAULT='';
+  var SITIOS={profesionales:'https://maup8.github.io/catalogo-opi/',interior:'https://maup8.github.io/catalogo-opi-interior/'};
+  var NOMBRES={profesionales:'Profesionales',interior:'Interior del país'};
+  var $=function(id){return document.getElementById(id)};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v) }catch(e){ return null } }
+  var m=/[?&]api=([^&#]+)/.exec(location.search); if(m){ ls('opi-admin-api',decodeURIComponent(m[1])); history.replaceState(null,'',location.pathname) }
+  var API=API_DEFAULT||ls('opi-admin-api')||'';
+  var TOKEN=ls('opi-admin-token'), YO=null, VISTA='profesionales', CAT={}, DATOS={}, sucio=false;
+
+  function api(q){
+    if(!API) return Promise.reject(new Error('Falta configurar la dirección del backend del portal.'));
+    if(TOKEN&&q.accion!=='login') q.token=TOKEN;
+    return fetch(API,{method:'POST',body:JSON.stringify(q)}).then(function(r){return r.json()}).then(function(r){
+      if(!r.ok&&r.error==='sesion'){ salir(r.mensaje); throw new Error(r.mensaje) }
+      if(!r.ok) throw new Error(r.mensaje||r.error||'Error');
+      return r;
+    });
+  }
+  function aviso(t,tipo){ var g=$('gmsg'); g.textContent=t; g.className='msg '+(tipo||'ok'); g.hidden=!t; if(t) window.scrollTo({top:0,behavior:'smooth'}) }
+
+  /* ---------- login ---------- */
+  function verLogin(msg){ $('vapp').hidden=true; $('vlogin').hidden=false; $('lmsg').hidden=!msg; $('lmsg').textContent=msg||''; var e=ls('opi-admin-mail'); if(e) $('lmail').value=e }
+  function salir(msg){ TOKEN=null; ls('opi-admin-token',null); verLogin(msg) }
+  $('flogin').addEventListener('submit',function(ev){
+    ev.preventDefault(); var b=$('lbtn'); b.disabled=true; b.textContent='Ingresando…'; $('lmsg').hidden=true;
+    api({accion:'login',email:$('lmail').value,pin:$('lpin').value}).then(function(r){
+      TOKEN=r.token; ls('opi-admin-token',TOKEN); ls('opi-admin-mail',r.email); $('lpin').value=''; entrar(r);
+    }).catch(function(e){ $('lmsg').textContent=e.message; $('lmsg').hidden=false }).then(function(){ b.disabled=false; b.textContent='Ingresar' });
+  });
+  $('bout').addEventListener('click',function(){ if(sucio&&!confirmar()) return; salir('') });
+  $('bpin').addEventListener('click',function(){
+    var a=window.prompt('PIN actual'); if(!a) return; var n=window.prompt('PIN nuevo (4 a 8 números)'); if(!n) return;
+    api({accion:'pin',actual:a,nuevo:n}).then(function(){ aviso('PIN actualizado.') }).catch(function(e){ aviso(e.message,'err') });
+  });
+  function confirmar(){ return window.confirm('Tenés cambios sin guardar. ¿Descartarlos?') }
+
+  function entrar(u){
+    YO=u; $('vlogin').hidden=true; $('vapp').hidden=false;
+    $('uname').textContent=u.nombre||u.email; $('urol').textContent=u.rol==='admin'?'Administrador':'Editor';
+    $('tusr').hidden=u.rol!=='admin';
+    ir('profesionales');
+  }
+
+  /* ---------- navegación ---------- */
+  $('tabs').addEventListener('click',function(ev){ var b=ev.target.closest('button[data-v]'); if(!b) return; if(sucio&&!confirmar()) return; ir(b.getAttribute('data-v')) });
+  function ir(v){
+    VISTA=v; sucio=false; $('savebar').hidden=true; aviso('');
+    Array.prototype.forEach.call($('tabs').children,function(c){ c.setAttribute('aria-pressed',c.getAttribute('data-v')===v) });
+    $('vcat').hidden=!(v in SITIOS); $('vusr').hidden=v!=='usuarios'; $('vlog').hidden=v!=='historial';
+    if(v in SITIOS) cargarCat(v); else if(v==='usuarios') cargarUsr(); else cargarLog();
+  }
+
+  /* ---------- catálogo ---------- */
+  function cargarCat(c){
+    $('plist').innerHTML='<p class="muted">Cargando…</p>'; $('tels').innerHTML='';
+    var base=SITIOS[c];
+    Promise.all([
+      api({accion:'leer',catalogo:c}),
+      DATOS[c]?Promise.resolve(DATOS[c]):Promise.all([fetch(base+'data/tonos.json').then(function(r){return r.json()}),fetch(base+'data/disponibles.json',{cache:'no-cache'}).then(function(r){return r.json()})]).then(function(x){ DATOS[c]={t:x[0],d:x[1]}; return DATOS[c] })
+    ]).then(function(r){
+      if(VISTA!==c) return;
+      var a=r[0].archivos, cf=a['data/config.json']||{}, aj=a['data/ajustes.json']||{};
+      CAT={catalogo:c,sha:{cfg:cf.sha,aj:aj.sha},
+        cfg:JSON.parse(JSON.stringify(cf.contenido||{telefonos:[],minimo:0,bajoMinimo:'bloquea',outlet:true})),
+        oc:{}, orig:null};
+      ((aj.contenido&&aj.contenido.ocultos)||[]).forEach(function(k){ CAT.oc[k]=1 });
+      CAT.orig=JSON.stringify([CAT.cfg,Object.keys(CAT.oc).sort()]);
+      pintarCfg(); pintarProd();
+    }).catch(function(e){ aviso(e.message,'err'); $('plist').innerHTML='' });
+  }
+  function telLocal(t){ t=String(t||''); return t.indexOf('598')===0?'0'+t.slice(3):t }
+  function telIntl(t){ t=String(t||'').replace(/[^0-9]/g,''); if(t.indexOf('598')===0) return t; if(t.charAt(0)==='0') t=t.slice(1); return t?'598'+t:'' }
+  function pintarCfg(){
+    var c=CAT.cfg;
+    $('tels').innerHTML=(c.telefonos||[]).map(function(t,i){
+      return '<div class="tel" data-i="'+i+'"><div class="tn"><label class="f">Nombre que ve la clienta</label><input type="text" data-k="nombre" maxlength="40" value="'+esc(t.nombre)+'" placeholder="Ej.: Ventas OPI"></div>'+
+        '<div><label class="f">Celular</label><input type="tel" data-k="tel" inputmode="tel" value="'+esc(telLocal(t.tel))+'" placeholder="09X XXX XXX"></div>'+
+        '<button class="ic" type="button" data-del="'+i+'" aria-label="Quitar número" title="Quitar número"'+((c.telefonos.length<2)?' disabled':'')+'>×</button></div>';
+    }).join('');
+    $('cmin').value=c.minimo||0; $('cbajo').value=c.bajoMinimo||'bloquea'; $('cout').checked=c.outlet!==false;
+    $('cout_t').textContent=$('cout').checked?'Outlet visible en el catálogo':'Outlet apagado';
+  }
+  $('tels').addEventListener('input',function(ev){
+    var row=ev.target.closest('.tel'); if(!row) return; var i=+row.getAttribute('data-i'), k=ev.target.getAttribute('data-k');
+    CAT.cfg.telefonos[i][k]=k==='tel'?telIntl(ev.target.value):ev.target.value; marcar();
+  });
+  $('tels').addEventListener('click',function(ev){ var b=ev.target.closest('[data-del]'); if(!b) return; CAT.cfg.telefonos.splice(+b.getAttribute('data-del'),1); pintarCfg(); marcar() });
+  $('addtel').addEventListener('click',function(){ CAT.cfg.telefonos.push({nombre:'',tel:''}); pintarCfg(); marcar(); var ins=$('tels').querySelectorAll('input[data-k="nombre"]'); ins[ins.length-1].focus() });
+  $('cmin').addEventListener('input',function(){ CAT.cfg.minimo=Math.max(0,Math.round(+this.value||0)); marcar() });
+  $('cbajo').addEventListener('change',function(){ CAT.cfg.bajoMinimo=this.value; marcar() });
+  $('cout').addEventListener('change',function(){ CAT.cfg.outlet=this.checked; $('cout_t').textContent=this.checked?'Outlet visible en el catálogo':'Outlet apagado'; marcar() });
+
+  function prods(){
+    var D=DATOS[CAT.catalogo], disp=D.d.d||{}, out=[];
+    D.t.t.forEach(function(t){ if((t[0] in disp)||CAT.oc[t[0]]) out.push({k:t[0],code:t[1],name:t[2],line:t[3],o:!!((D.d.o||{})[t[0]])}) });
+    return out;
+  }
+  function pintarProd(){
+    var D=DATOS[CAT.catalogo], P=prods(), cnt={};
+    P.forEach(function(p){ cnt[p.line]=(cnt[p.line]||0)+1 });
+    var sel=$('pline'), v=sel.value; sel.innerHTML='<option value="">Todas las líneas</option>'+D.t.lines.map(function(n,i){ return cnt[i]?'<option value="'+i+'">'+esc(n)+' ('+cnt[i]+')</option>':'' }).join(''); sel.value=v;
+    filtrar();
+  }
+  function filtrar(){
+    var P=prods(), q=$('pq').value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''), l=$('pline').value, ver=$('pver').value, base=SITIOS[CAT.catalogo], D=DATOS[CAT.catalogo];
+    var noc=P.filter(function(p){return CAT.oc[p.k]}).length;
+    $('pcount').textContent=P.length+' productos con stock'+(noc?', '+noc+' ocultos':'')+'.';
+    var L=P.filter(function(p){
+      if(l!==''&&p.line!==+l) return false;
+      if(ver==='on'&&CAT.oc[p.k]) return false; if(ver==='off'&&!CAT.oc[p.k]) return false;
+      return !q||(p.name+' '+p.code+' '+p.k).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(q)>=0;
+    });
+    var h=L.slice(0,400).map(function(p){
+      var on=!CAT.oc[p.k];
+      return '<div class="pi'+(on?'':' off')+'"><img loading="lazy" alt="" src="'+base+'img/p/'+encodeURIComponent(p.k)+'.jpg?v=9">'+
+        '<div><b>'+esc(p.name)+(p.o?'<span class="tag">Outlet</span>':'')+'</b><span>'+esc(p.code||'')+' · Cód. '+esc(p.k)+' · '+esc(D.t.lines[p.line])+'</span></div>'+
+        '<label class="sw" title="'+(on?'Visible':'Oculto')+'"><input type="checkbox" data-k="'+esc(p.k)+'"'+(on?' checked':'')+' aria-label="Mostrar '+esc(p.name)+'"></label></div>';
+    }).join('');
+    $('plist').innerHTML=h||'<p class="muted" style="padding:10px 0">No hay productos con ese filtro.</p>';
+    if(L.length>400) $('plist').insertAdjacentHTML('beforeend','<p class="muted" style="padding:10px 0">Se muestran 400 de '+L.length+'. Usá el buscador para acotar.</p>');
+  }
+  $('pq').addEventListener('input',filtrar); $('pline').addEventListener('change',filtrar); $('pver').addEventListener('change',filtrar);
+  $('plist').addEventListener('change',function(ev){
+    var k=ev.target.getAttribute('data-k'); if(!k) return;
+    if(ev.target.checked) delete CAT.oc[k]; else CAT.oc[k]=1;
+    ev.target.closest('.pi').classList.toggle('off',!ev.target.checked); marcar();
+    var noc=Object.keys(CAT.oc).length; $('pcount').textContent=prods().length+' productos con stock'+(noc?', '+noc+' ocultos':'')+'.';
+  });
+
+  function resumen(){
+    var o=JSON.parse(CAT.orig), c=CAT.cfg, t=[];
+    if(JSON.stringify(o[0].telefonos)!==JSON.stringify(c.telefonos)) t.push('teléfonos');
+    if(o[0].minimo!==c.minimo) t.push('mínimo $'+c.minimo);
+    if(o[0].bajoMinimo!==c.bajoMinimo) t.push(c.bajoMinimo==='publico'?'bajo el mínimo: precio consumidor final':'bajo el mínimo: no se envía');
+    if((o[0].outlet!==false)!==(c.outlet!==false)) t.push(c.outlet!==false?'Outlet encendido':'Outlet apagado');
+    var a=o[1], b=Object.keys(CAT.oc).sort(), oc=b.filter(function(k){return a.indexOf(k)<0}).length, mo=a.filter(function(k){return b.indexOf(k)<0}).length;
+    if(oc) t.push(oc+(oc===1?' producto oculto':' productos ocultos')); if(mo) t.push(mo+(mo===1?' producto visible de nuevo':' productos visibles de nuevo'));
+    return t.join(', ');
+  }
+  function marcar(){
+    sucio=JSON.stringify([CAT.cfg,Object.keys(CAT.oc).sort()])!==CAT.orig;
+    $('savebar').hidden=!sucio;
+    if(sucio) $('savetxt').innerHTML=esc(NOMBRES[CAT.catalogo])+': '+esc(resumen()||'cambios')+'<span>Se publican en el catálogo en aproximadamente un minuto.</span>';
+  }
+  $('bdesc').addEventListener('click',function(){ cargarCat(CAT.catalogo); sucio=false; $('savebar').hidden=true });
+  $('bsave').addEventListener('click',function(){
+    var c=CAT.cfg;
+    if(!c.telefonos.length||c.telefonos.some(function(t){return !/^598\d{8}$/.test(t.tel)})) return aviso('Revisá los celulares: tienen que ser números uruguayos de 9 dígitos (09X XXX XXX).','err');
+    var b=$('bsave'); b.disabled=true; b.textContent='Publicando…';
+    var archivos={}, o=JSON.parse(CAT.orig);
+    if(JSON.stringify(o[0])!==JSON.stringify(c)) archivos['data/config.json']={sha:CAT.sha.cfg,contenido:c};
+    var ocs=Object.keys(CAT.oc).sort(); if(JSON.stringify(o[1])!==JSON.stringify(ocs)) archivos['data/ajustes.json']={sha:CAT.sha.aj,contenido:{ocultos:ocs}};
+    var cat=CAT.catalogo, res=resumen();
+    api({accion:'guardar',catalogo:cat,archivos:archivos,resumen:res}).then(function(){
+      sucio=false; $('savebar').hidden=true; cargarCat(cat);
+      aviso('Publicado en '+NOMBRES[cat]+': '+res+'. El catálogo lo muestra en aproximadamente un minuto.');
+    }).catch(function(e){ aviso(e.message,'err') }).then(function(){ b.disabled=false; b.textContent='Guardar y publicar' });
+  });
+  window.addEventListener('beforeunload',function(ev){ if(sucio){ ev.preventDefault(); ev.returnValue='' } });
+
+  /* ---------- usuarios ---------- */
+  function cargarUsr(){ api({accion:'usuarios'}).then(function(r){ pintarUsr(r.usuarios) }).catch(function(e){ aviso(e.message,'err') }) }
+  function pintarUsr(L){
+    $('ulist').innerHTML=L.map(function(u){
+      return '<div class="ur"><div><b>'+esc(u.nombre||u.email)+'</b><span>'+(u.nombre?esc(u.email)+' · ':'')+(u.rol==='admin'?'Administrador':'Editor')+'</span></div><div style="flex:none">'+
+        '<button class="lnk" type="button" data-ed="'+esc(u.email)+'" data-n="'+esc(u.nombre)+'" data-r="'+u.rol+'">Editar</button>'+
+        (u.email===YO.email?'':' <button class="lnk" type="button" data-rm="'+esc(u.email)+'">Quitar</button>')+'</div></div>';
+    }).join('');
+  }
+  function limpiarU(){ $('ufrm').reset(); $('umail').readOnly=false; $('uftitle').textContent='Agregar usuario'; $('ucancel').hidden=true }
+  $('ulist').addEventListener('click',function(ev){
+    var e=ev.target.closest('[data-ed]'), r=ev.target.closest('[data-rm]');
+    if(e){ $('umail').value=e.getAttribute('data-ed'); $('umail').readOnly=true; $('unom').value=e.getAttribute('data-n'); $('urol2').value=e.getAttribute('data-r'); $('upin').value=''; $('uftitle').textContent='Editar usuario'; $('ucancel').hidden=false; $('unom').focus() }
+    if(r&&window.confirm('¿Quitar el acceso de '+r.getAttribute('data-rm')+'?')) api({accion:'usuarioBorrar',email:r.getAttribute('data-rm')}).then(function(x){ pintarUsr(x.usuarios); aviso('Usuario quitado.') }).catch(function(e){ aviso(e.message,'err') });
+  });
+  $('ucancel').addEventListener('click',limpiarU);
+  $('ufrm').addEventListener('submit',function(ev){
+    ev.preventDefault();
+    api({accion:'usuarioGuardar',usuario:{email:$('umail').value,nombre:$('unom').value,pin:$('upin').value,rol:$('urol2').value}}).then(function(x){ pintarUsr(x.usuarios); limpiarU(); aviso('Usuario guardado. Pasale su PIN por un canal privado.') }).catch(function(e){ aviso(e.message,'err') });
+  });
+
+  /* ---------- historial ---------- */
+  function cargarLog(){ api({accion:'historial'}).then(function(r){
+    $('llist').innerHTML=r.log.length?r.log.map(function(x){ var d=new Date(x.f); return '<li>'+esc(x.t)+'<small>'+esc(x.u)+' · '+d.toLocaleString('es-UY')+'</small></li>' }).join(''):'<li class="muted">Todavía no hay cambios.</li>';
+  }).catch(function(e){ aviso(e.message,'err') }) }
+
+  /* ---------- arranque ---------- */
+  if(!API){ verLogin('El portal todavía no está conectado a su backend.'); $('lbtn').disabled=true }
+  else if(TOKEN){ api({accion:'yo'}).then(function(u){ u.token=TOKEN; entrar(u) }).catch(function(){ verLogin('') }) }
+  else verLogin('');
+})();
+</script>
+</body>
+</html>
