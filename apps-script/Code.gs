@@ -787,3 +787,15 @@ function cambiarFoto_(u, sku, foto) {
   registrar_(u.email, 'Cambió la foto de ' + t[2] + ' (' + sku + ')');
   return { ok: true };
 }
+
+// Para correr desde el editor: lista medidas del modelo relacionadas con ventas (para "los más pedidos").
+function explorarMedidas() {
+  try {
+    var r = dax_('EVALUATE SELECTCOLUMNS(FILTER(INFO.MEASURES(), SEARCH("vent", [Name], 1, 0) > 0 || SEARCH("unid", [Name], 1, 0) > 0 || SEARCH("cant", [Name], 1, 0) > 0 || SEARCH("factur", [Name], 1, 0) > 0), "n", [Name], "e", LEFT([Expression], 160))');
+    r.forEach(function (x) { Logger.log(x.n + '  =  ' + String(x.e).replace(/\s+/g, ' ')); });
+  } catch (e) { Logger.log('INFO.MEASURES no disponible: ' + e.message); }
+  try {
+    var t = dax_('EVALUATE SELECTCOLUMNS(INFO.TABLES(), "t", [Name])');
+    Logger.log('Tablas: ' + t.map(function (x) { return x.t; }).join(' | '));
+  } catch (e) { Logger.log('INFO.TABLES no disponible: ' + e.message); }
+}
