@@ -381,6 +381,13 @@ function fifoOutlet_(rows) {
   });
 }
 
+// Ranking de lo más vendido (unidades vendidas sin bonificadas, últimos 12 meses) para las filas comerciales.
+var Q_TOP = 'EVALUATE FILTER(ADDCOLUMNS(SUMMARIZE(FILTER(PbiProductos, PbiProductos[Marca] = "OPI"), PbiProductos[Producto#]), "u", [UnidV 12M]), [u] > 0)';
+function rankingPBI_() {
+  return dax_(Q_TOP).map(function (r) { return { k: String(r['Producto#']).trim(), u: +r.u || 0 }; })
+    .sort(function (a, b) { return b.u - a.u; }).map(function (x) { return x.k; });
+}
+
 var OUTLET_DEF = { corte: '2022-01-01', manual: [], excluidos: [] };
 function outletCfg_() {
   var c = JSON.parse(props_().getProperty('OUTLET_CFG') || 'null') || {};
@@ -417,7 +424,7 @@ function jsonIndent0_(o) {
 // Calcula disponibles.json y el tope del Outlet. Puro (sin E/S) para poder probarlo aparte.
 // tope: unidades viejas por SKU y lote de corridas anteriores con la MISMA fecha de corte (o null si cambió).
 // cfgOut: { manual: [sku], excluidos: [sku] }.
-function calcular_(tonos, previoDisp, tope, prods, outletRows, cfgOut) {
+function calcular_(tonos, previoDisp, tope, prods, outletRows, cfgOut, ranking) {
   cfgOut = cfgOut || { manual: [], excluidos: [] };
   var linea = {};
   tonos.t.forEach(function (t) { linea[t[0]] = t[3]; });
@@ -476,12 +483,14 @@ function calcular_(tonos, previoDisp, tope, prods, outletRows, cfgOut) {
   (cfgOut.excluidos || []).forEach(function (k) { delete o[k]; });
   var D = {}, PP = {}, O = {};
   tonos.t.forEach(function (t) { var k = t[0]; if (k in d) { D[k] = d[k]; if (k in pp) PP[k] = pp[k]; if (k in o) O[k] = o[k]; } });
+  // Orden de lo más vendido entre lo publicado (solo el orden, sin cantidades). Si no vino, se conserva el anterior.
+  var TOP = (ranking || (previoDisp && previoDisp.top) || []).filter(function (k) { return k in D; });
   var altas = Object.keys(D).filter(function (k) { return !(k in previo); });
   var bajas = Object.keys(previo).filter(function (k) { return !(k in D); });
   var cambios = Object.keys(D).filter(function (k) { return (k in previo) && Math.abs(D[k] - previo[k]) > 0.005; });
   var nOut = Object.keys(O).length;
   return {
-    disp: { d: D, pp: PP, o: O }, tope: topeNuevo,
+    disp: { d: D, pp: PP, o: O, top: TOP }, tope: topeNuevo,
     freno: Object.keys(previo).length > 0 && Object.keys(D).length < 0.6 * Object.keys(previo).length,
     resumen: 'Disponibles ' + Object.keys(D).length + ' (antes ' + Object.keys(previo).length + '): altas ' + altas.length +
       ', bajas ' + bajas.length + ', cambios de precio ' + cambios.length + ', sin precio ' + sinPrecio.length +
@@ -496,21 +505,22 @@ function actualizar_(origen, opciones) {
   opciones = opciones || {};
   var P = REPOS.profesionales, I = REPOS.interior;
   var prods = productosPBI_(), outletRows = null, avisoOutlet = '';
-  var oc = outletCfg_(), pr = props_();
+  var oc = outletCfg_(), pr = props_(), ranking = null;
+  try { ranking = rankingPBI_(); } catch (e) { /* sin ranking: se conserva el anterior */ }
   try { outletRows = fifoOutlet_(dax_(qOutlet_(oc.corte))); } catch (e) { avisoOutlet = ' Outlet sin actualizar (' + String(e.message).slice(0, 120) + ').'; }
   var fT = leerArchivo_(P, 'data/tonos.json'), fD = leerArchivo_(P, 'data/disponibles.json'), fO = leerArchivo_(P, 'tools/outlet_tope.json');
   var tonos = JSON.parse(fT.texto), previo = fD.texto ? JSON.parse(fD.texto) : null, tope = fO.texto ? JSON.parse(fO.texto) : {};
   var mismaFecha = (pr.getProperty('TOPE_CORTE') || OUTLET_DEF.corte) === oc.corte;
-  var c = calcular_(tonos, previo, mismaFecha ? tope : null, prods, outletRows, oc);
+  var c = calcular_(tonos, previo, mismaFecha ? tope : null, prods, outletRows, oc, ranking);
   var hoy = ahora_('yyyy-MM-dd'), cuando = ahora_('yyyy-MM-dd HH:mm');
   if (c.freno) {
     var msj = 'Freno: los disponibles caen más de 40 %. No se publicó nada. ' + c.resumen;
     estado_(origen, false, msj); avisar_('Catálogos OPI: la actualización frenó', msj);
     return { ok: false, mensaje: msj };
   }
-  var nuevo = { fecha: hoy, d: c.disp.d, pp: c.disp.pp, o: c.disp.o };
+  var nuevo = { fecha: hoy, d: c.disp.d, pp: c.disp.pp, o: c.disp.o, top: c.disp.top };
   var cambio = !previo || previo.fecha !== hoy ||
-    JSON.stringify({ d: previo.d, pp: previo.pp || {}, o: previo.o || {} }) !== JSON.stringify(c.disp);
+    JSON.stringify({ d: previo.d, pp: previo.pp || {}, o: previo.o || {}, top: previo.top || [] }) !== JSON.stringify(c.disp);
   var msg = 'Actualización de disponibles y precios ' + cuando, publicados = [];
   if (cambio) {
     var texto = JSON.stringify(nuevo);
