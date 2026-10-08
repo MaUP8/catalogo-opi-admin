@@ -496,7 +496,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     var A=NUE.productos.filter(function(p){ return !q||(p.nombre+' '+p.sku+' '+p.linea).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(q)>=0 });
     var L=A.filter(function(p){return !p.desc}), D=A.filter(function(p){return p.desc});
     function fila(p){
-      return '<div class="ni"><div><b>'+esc(p.nombre||'(sin nombre en el sistema)')+(p.precio?'':'<span class="tag warn">Sin precio</span>')+'</b><span>'+(p.codigo?esc(p.codigo)+' · ':'')+'Cód. '+esc(p.sku)+(p.linea?' · '+esc(p.linea):'')+'</span>'+info(p.sku,null,p)+'</div>'+
+      return '<div class="ni"><div><b>'+esc(p.nombre||'(sin nombre en el sistema)')+(p.precio?'':'<span class="tag warn">Sin precio</span>')+(p.gemelo?'<span class="tag">Ya publicado con otro código</span>':'')+'</b><span>'+(p.codigo?esc(p.codigo)+' · ':'')+'Cód. '+esc(p.sku)+(p.linea?' · '+esc(p.linea):'')+'</span>'+info(p.sku,null,p)+'</div>'+
         '<div style="white-space:nowrap">'+(p.desc?'<button class="lnk" type="button" data-des="'+esc(p.sku)+'" data-val="0">Volver a la lista</button>':
         '<button class="lnk" type="button" data-des="'+esc(p.sku)+'" data-val="1" title="No publicar y sacarlo de esta lista">No va</button> <button class="btn sec" type="button" data-pub="'+esc(p.sku)+'">Publicar</button>')+'</div></div>';
     }
@@ -518,10 +518,13 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   function abrirPub(){
     var p=PUBP; FOTO=null; $('pmsg').hidden=true; $('pfrm').reset();
     $('psub').textContent='Cód. '+p.sku+(p.linea?' · en el sistema: '+p.linea:'')+(p.precio?'':' · Sin precio en el sistema: no se va a ver hasta que lo tenga.');
-    $('pnom').value=p.nombre||''; $('pcod').value=p.codigo||'';
-    $('plin').innerHTML=opts(NUE.lines,p.sugerida);
-    $('pfam').innerHTML=opts(NUE.fams,-1,'<option value="-1">Elegí la familia…</option>');
-    $('pcol').innerHTML=opts(NUE.cols,-1,'<option value="-1">Sin colección</option>');
+    var g=p.gemelo;
+    if(g) $('psub').textContent+=' · Este tono ya está publicado con el código '+g.sku+': se completaron sus datos.';
+    $('pnom').value=g?g.nombre:(p.nombre||''); $('pcod').value=p.codigo||'';
+    $('plin').innerHTML=opts(NUE.lines,g?g.linea:p.sugerida);
+    $('pfam').innerHTML=opts(NUE.fams,g?g.fam:-1,'<option value="-1">Elegí la familia…</option>');
+    $('pcol').innerHTML=opts(NUE.cols,g?g.col:-1,'<option value="-1">Sin colección</option>');
+    if(g&&g.hex) $('phex').value='#'+g.hex;
     var c=$('pcan').getContext('2d'); c.fillStyle='#fff'; c.fillRect(0,0,440,760); c.fillStyle='#b7aebb'; c.font='600 28px Arial'; c.textAlign='center'; c.fillText('Sin foto',220,390);
     lin(); $('pub').hidden=false; $('pnom').focus();
   }
@@ -557,7 +560,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   }
   $('pfile').addEventListener('change',function(){
     var f=this.files&&this.files[0]; if(!f) return;
-    procesarFoto(f,$('pcan'),function(dataUrl,hex){ FOTO=dataUrl; if(hex) $('phex').value=hex },function(){ $('pmsg').textContent='No se pudo leer esa imagen.'; $('pmsg').hidden=false });
+    procesarFoto(f,$('pcan'),function(dataUrl,hex){ FOTO=dataUrl; if(hex&&!(PUBP&&PUBP.gemelo&&PUBP.gemelo.hex)) $('phex').value=hex },function(){ $('pmsg').textContent='No se pudo leer esa imagen.'; $('pmsg').hidden=false });
   });
   $('pfrm').addEventListener('submit',function(ev){
     ev.preventDefault(); var m=$('pmsg'); m.hidden=true;

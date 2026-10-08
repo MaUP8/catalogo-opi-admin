@@ -703,20 +703,30 @@ function sistema_(u) {
 
 function sinPublicar_(u) {
   var prods = productosPBI_();
-  var tonos = JSON.parse(leerArchivo_(REPOS.profesionales, 'data/tonos.json').texto), ya = {};
-  tonos.t.forEach(function (t) { ya[t[0]] = 1; });
+  var tonos = JSON.parse(leerArchivo_(REPOS.profesionales, 'data/tonos.json').texto), ya = {}, porCod = {};
+  tonos.t.forEach(function (t) { ya[t[0]] = 1; if (t[1]) porCod[String(t[1]).toUpperCase()] = t; });
   var cn = prods[0] ? colNombre_(prods[0]) : null, desc = descartados_();
   var lista = prods.filter(function (r) { return !ya[r.sku]; }).map(function (r) {
-    var nom = cn ? String(r[cn] || '').trim() : '', cod = '';
-    // En el sistema el nombre viene como "FI641 - OPI FLEX ...": se separa el código corto.
-    var m = /^([A-Z0-9]{2,12})\s+-\s+(.+)$/.exec(nom);
-    if (m) { cod = m[1]; nom = m[2]; }
+    var x = limpiarNombre_(cn ? r[cn] : ''), nom = x.nombre, cod = x.codigo;
     var pf = preciosFinales_(r), o = { sku: r.sku, nombre: nom, codigo: cod, linea: String(r.Linea || ''), precio: !!r.pg, prof: pf.prof, pub: pf.pub, sugerida: lineaSugerida_(r.Linea, nom), desc: !!desc[r.sku] };
+    // Mismo código corto ya publicado con otro código de sistema (reposición con código nuevo): se ofrecen sus datos.
+    var g = cod && porCod[cod.toUpperCase()];
+    if (g) o.gemelo = { sku: g[0], nombre: g[2], linea: g[3], fam: g[4], hex: g[5], col: g[6] };
     if (u && u.rol === 'admin') o.st = Math.round(+r.st || 0);
     return o;
   });
   lista.sort(function (a, b) { return (a.linea + a.nombre).localeCompare(b.linea + b.nombre); });
   return { ok: true, productos: lista, lines: tonos.lines, fams: tonos.fams, cols: tonos.cols };
+}
+
+// En el sistema el nombre viene como "FI641 - OPI FLEX ..." o "* GCV28 - Tiramisu for two 15ML":
+// se separa el código corto y se sacan el asterisco inicial y la medida final.
+function limpiarNombre_(v) {
+  var nom = String(v || '').trim().replace(/^[*\s]+/, ''), cod = '';
+  var m = /^([A-Z0-9]{2,12})\s+-\s+(.+)$/.exec(nom);
+  if (m) { cod = m[1]; nom = m[2]; }
+  nom = nom.replace(/\s+\d+(?:[.,]\d+)?\s*ML\.?$/i, '').trim();
+  return { nombre: nom, codigo: cod };
 }
 
 // Productos que se decidió no publicar (por ejemplo, colecciones que no van): no molestan en la lista.
