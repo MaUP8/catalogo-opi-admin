@@ -573,8 +573,8 @@ function reporte_(origen, c, tonos, publicados, avisoOutlet) {
       lista('Bajas', d.bajas, function (k) { return esc(nom[k] || k) + ' <span style="color:#6f6475">(' + k + ')</span>'; }) +
       lista('Cambios de precio profesional', d.cambios, function (x) { return esc(nom[x[0]] || x[0]) + ': ' + $(x[1]) + ' → <b>' + $(x[2]) + '</b>'; }) +
       lista('Con stock pero sin precio (no se muestran)', d.sinPrecio, function (k) { return esc(nom[k] || k) + ' <span style="color:#6f6475">(' + k + ')</span>'; }) +
-      '<p style="margin:20px 0 0;font-size:13px"><a href="https://maup8.github.io/catalogo-opi/">Catálogo profesionales</a> · ' +
-      '<a href="https://maup8.github.io/catalogo-opi-interior/">Catálogo interior</a> · <a href="https://maup8.github.io/catalogo-opi-admin/">Portal</a></p></div>';
+      '<p style="margin:20px 0 0;font-size:13px"><a href="https://opi.catalogospbg.com/">Catálogo profesionales</a> · ' +
+      '<a href="https://opi-interior.catalogospbg.com/">Catálogo interior</a> · <a href="https://admin.catalogospbg.com/">Portal</a></p></div>';
     var asunto = 'Catálogos OPI · ' + cuando + ' · ' + cf.disponibles + ' disponibles' +
       (cf.altas || cf.bajas || cf.precios ? ' (' + [cf.altas ? '+' + cf.altas : '', cf.bajas ? '-' + cf.bajas : '', cf.precios ? cf.precios + ' precios' : ''].filter(String).join(', ') + ')' : ', sin cambios');
     MailApp.sendEmail({ to: to, subject: asunto, htmlBody: html, body: c.resumen, name: 'Catálogos OPI' });
@@ -584,7 +584,7 @@ function reporte_(origen, c, tonos, publicados, avisoOutlet) {
 function avisar_(asunto, texto) {
   try {
     var to = props_().getProperty('ADMIN_EMAIL');
-    if (to) MailApp.sendEmail(to, asunto, texto + '\n\nPortal: https://maup8.github.io/catalogo-opi-admin/');
+    if (to) MailApp.sendEmail(to, asunto, texto + '\n\nPortal: https://admin.catalogospbg.com/');
   } catch (e) { /* el aviso es secundario */ }
 }
 

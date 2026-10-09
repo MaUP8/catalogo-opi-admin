@@ -72,4 +72,4 @@ GitHub: data/config.json y data/ajustes.json de cada catálogo
 - **Cambiar el código del backend:** editar en Apps Script → Implementar → Gestionar implementaciones → editar la existente → *Nueva versión*. Así la URL no cambia.
 - **Token vencido:** el portal da error al leer o guardar. Generar uno nuevo y reemplazar `GITHUB_TOKEN`.
 - **PIN del administrador olvidado:** volver a cargar `ADMIN_PIN` en las propiedades. En el próximo uso se reemplaza.
-- **Dominio propio:** actualizar `SITIOS` en `index.html` con las URLs nuevas de los catálogos.
+- **Dominio propio:** catalogospbg.com (Cloudflare). Subdominios: opi (profesionales), opi-interior (interior), admin (este portal); CNAME a maup8.github.io con la nube en gris. Una marca nueva = un subdominio más y su URL en `SITIOS`.
