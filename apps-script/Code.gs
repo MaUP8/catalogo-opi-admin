@@ -4,7 +4,7 @@
  *
  * Propiedades del script (Configuración del proyecto → Propiedades del script):
  *   GITHUB_TOKEN  token "fine-grained" de GitHub con permiso Contents: Read and write
- *                 SOLO sobre MaUP8/catalogo-opi y MaUP8/catalogo-opi-interior.
+ *                 SOLO sobre MaUP8/catalogo-opi, MaUP8/catalogo-opi-interior y MaUP8/catalogo-hair.
  *   ADMIN_EMAIL   mail del administrador (Mauri).
  *   ADMIN_PIN     PIN inicial del administrador. Se guarda cifrado en el primer uso y se borra.
  *   PBI_TENANT_ID, PBI_CLIENT_ID, PBI_CLIENT_SECRET   app de Azure con acceso al modelo publicado.
@@ -18,7 +18,8 @@
 
 var REPOS = {
   profesionales: 'MaUP8/catalogo-opi',
-  interior: 'MaUP8/catalogo-opi-interior'
+  interior: 'MaUP8/catalogo-opi-interior',
+  hair: 'MaUP8/catalogo-hair'          // Wella, Nioxin y Sebastian: lógica propia en Hair.gs
 };
 var ARCHIVOS = ['data/config.json', 'data/ajustes.json'];
 var SESION_HORAS = 12;
@@ -51,7 +52,7 @@ function rutear_(q) {
     case 'yo': return { ok: true, email: u.email, rol: u.rol, nombre: u.nombre || '' };
     case 'leer': return leer_(q.catalogo);
     case 'guardar': return guardar_(u, q.catalogo, q.archivos, q.resumen);
-    case 'historial': return { ok: true, log: log_(), ultima: JSON.parse(props_().getProperty('ULTIMA_ACT') || 'null') };
+    case 'historial': return { ok: true, log: log_(), ultima: JSON.parse(props_().getProperty('ULTIMA_ACT') || 'null'), ultimaHair: JSON.parse(props_().getProperty('ULTIMA_ACT_HAIR') || 'null') };
     case 'actualizar': return actualizarDesdePortal_(u);
     case 'sinPublicar': return sinPublicar_(u);
     case 'sistema': return sistema_(u);
@@ -60,6 +61,15 @@ function rutear_(q) {
     case 'outletLeer': return { ok: true, outlet: outletCfg_() };
     case 'outletGuardar': return outletGuardar_(u, q.outlet);
     case 'cambiarFoto': return cambiarFoto_(u, q.sku, q.foto);
+    // Catálogo Hair (Hair.gs)
+    case 'hSistema': return sistemaHair_(u);
+    case 'hVenc': return vencimientosHair_(u);
+    case 'hSinPublicar': return sinPublicarHair_(u);
+    case 'hPublicar': return publicarHair_(u, q.producto);
+    case 'hDescartar': return descartarHair_(u, q.sku, q.valor);
+    case 'hFoto': return cambiarFotoHair_(u, q.sku, q.foto);
+    case 'hActualizar':
+      try { return actualizarHair_(u.email); } catch (e) { return { ok: false, mensaje: String(e.message) }; }
     case 'pin': return cambiarPin_(u, q.actual, q.nuevo);
     case 'usuarios': soloAdmin_(u); return { ok: true, usuarios: listarUsuarios_() };
     case 'usuarioGuardar': soloAdmin_(u); return guardarUsuario_(u, q.usuario);
@@ -204,7 +214,8 @@ function leer_(catalogo) {
   return { ok: true, archivos: out };
 }
 
-function validar_(path, c) {
+function validar_(path, c, catalogo) {
+  if (catalogo === 'hair') return validarHair_(path, c);
   if (path === 'data/config.json') {
     if (!c || !Array.isArray(c.telefonos) || !c.telefonos.length) throw new Error('Tiene que haber al menos un teléfono.');
     c.telefonos.forEach(function (t) {
@@ -231,7 +242,7 @@ function guardar_(u, catalogo, archivos, resumen) {
   var hechos = [];
   Object.keys(archivos || {}).forEach(function (p) {
     if (ARCHIVOS.indexOf(p) < 0) throw new Error('Archivo no permitido: ' + p);
-    var limpio = validar_(p, archivos[p].contenido);
+    var limpio = validar_(p, archivos[p].contenido, catalogo);
     var texto = JSON.stringify(limpio, null, 2) + '\n';
     var actual = gh_('get', repo + '/contents/' + p + '?ref=main');
     var sha = actual.code === 200 ? actual.json.sha : null;
@@ -250,7 +261,12 @@ function guardar_(u, catalogo, archivos, resumen) {
     hechos.push(p);
   });
   registrar_(u.email, catalogo + ': ' + (resumen || hechos.join(', ')));
-  return { ok: true, guardados: hechos, archivos: leer_(catalogo).archivos };
+  // Hair: el plazo del Outlet sale de la configuración, así que al guardarla se recalcula qué entra.
+  var extra = '';
+  if (catalogo === 'hair' && hechos.indexOf('data/config.json') >= 0) {
+    try { extra = actualizarHair_(u.email).mensaje; } catch (e) { extra = 'No se pudo recalcular el Outlet: ' + e.message; }
+  }
+  return { ok: true, guardados: hechos, archivos: leer_(catalogo).archivos, mensaje: extra };
 }
 
 /* ---------- historial ---------- */
@@ -589,8 +605,13 @@ function avisar_(asunto, texto) {
 }
 
 function actualizarDesdePortal_(u) {
-  try { return actualizar_(u.email, { reporte: true }); }
-  catch (e) { estado_(u.email, false, String(e.message)); return { ok: false, mensaje: String(e.message) }; }
+  var r;
+  try { r = actualizar_(u.email, { reporte: true }); }
+  catch (e) { estado_(u.email, false, String(e.message)); r = { ok: false, mensaje: String(e.message) }; }
+  // El catálogo Hair va aparte: si falla no frena a OPI ni al revés.
+  try { var h = actualizarHair_(u.email); r.mensaje += ' · ' + h.mensaje; }
+  catch (e) { r.mensaje += ' · Hair: ' + e.message; }
+  return r;
 }
 
 // Disparador horario: solo actúa de lunes a viernes en HORAS_AUTO (Montevideo), una vez por franja.
@@ -603,10 +624,13 @@ function actualizacionProgramada() {
   lock.waitLock(120000);
   try {
     p.setProperty('ULTIMA_FRANJA', franja);
-    actualizar_('automática', { reporte: true });
-  } catch (e) {
-    estado_('automática', false, String(e.message));
-    avisar_('Catálogos OPI: la actualización automática falló', String(e.message));
+    try { actualizar_('automática', { reporte: true }); }
+    catch (e) {
+      estado_('automática', false, String(e.message));
+      avisar_('Catálogos OPI: la actualización automática falló', String(e.message));
+    }
+    try { actualizarHair_('automática'); }
+    catch (e) { avisar_('Catálogo Hair: la actualización automática falló', String(e.message)); }
   } finally { lock.releaseLock(); }
 }
 
