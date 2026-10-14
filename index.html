@@ -26,6 +26,10 @@ header{background:var(--ground);border-bottom:1px solid var(--line);position:sti
 nav{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:10px}
 nav button{flex:none;font:inherit;font-weight:600;font-size:14px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--ground);color:var(--ink);cursor:pointer}
 nav button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.subtabs{gap:2px 18px;padding:0 4px;border-top:1px solid var(--line);padding-top:2px;margin-top:-2px}
+.subtabs:empty{display:none}
+.subtabs button{border:0;border-radius:0;background:none;padding:10px 0 8px;font-weight:600;color:var(--mute);border-bottom:2px solid transparent}
+.subtabs button[aria-pressed="true"]{background:none;color:var(--ink);border-color:var(--ink)}
 main{padding-block:18px 120px}
 .card{background:var(--ground);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
 .card h2{font-size:17px;margin:0 0 4px}
@@ -136,15 +140,13 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     <h1><small>Administración</small>Catálogos PBG</h1>
     <div class="who"><b id="uname"></b><span class="rol" id="urol"></span><br><button class="lnk" id="bpin" type="button">Cambiar PIN</button><span class="sep"> · </span><button class="lnk" id="bout" type="button">Salir</button></div>
   </div>
-  <nav id="tabs">
-    <button type="button" data-v="profesionales" aria-pressed="true">Profesionales</button>
-    <button type="button" data-v="interior" aria-pressed="false">Interior del país</button>
-    <button type="button" data-v="hair" aria-pressed="false">Hair</button>
-    <button type="button" data-v="outlet" aria-pressed="false">Outlet</button>
-    <button type="button" data-v="nuevos" aria-pressed="false">Sin publicar</button>
-    <button type="button" data-v="usuarios" aria-pressed="false" id="tusr" hidden>Usuarios</button>
-    <button type="button" data-v="historial" aria-pressed="false">Historial</button>
+  <nav id="tabs" aria-label="Rubro">
+    <button type="button" data-g="nails" aria-pressed="true">Nails</button>
+    <button type="button" data-g="hair" aria-pressed="false">Hair</button>
+    <button type="button" data-g="usuarios" aria-pressed="false" id="tusr" hidden>Usuarios</button>
+    <button type="button" data-g="historial" aria-pressed="false">Historial</button>
   </nav>
+  <nav id="subtabs" class="subtabs" aria-label="Sección"></nav>
 </div></header>
 
 <main class="wrap">
@@ -187,6 +189,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 
   <div id="vhair" hidden>
     <div class="cathd"><div class="cl"><div class="blogos"><img class="wella" src="img/wella.png" alt="Wella Professionals"><img class="nioxin" src="img/nioxin.png" alt="Nioxin"><img class="seb" src="img/sebastian.png" alt="Sebastian Professional"></div><span class="bsep"></span><div><small>Catálogo</small><b>Hair</b></div></div><a class="btn sec" id="hweb" href="https://hair.catalogospbg.com/" target="_blank" rel="noopener">Abrir web ↗</a></div>
+    <div id="hs_cat">
     <div class="card">
       <h2>Vendedores y links</h2>
       <p class="sub">Cada vendedor comparte su link: los pedidos que entran por ahí le llegan a su WhatsApp. Si una clienta entra sin link, elige a quién enviarlo.</p>
@@ -198,6 +201,18 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       <p class="sub">Se mide a precio profesional con impuestos, sin contar los obsequios. En 0 no hay mínimo.</p>
       <div class="row"><div><label class="f" for="hmin">Monto mínimo ($)</label><input id="hmin" type="number" min="0" step="100"></div></div>
     </div>
+    <div class="card">
+      <h2>Productos</h2>
+      <p class="sub">Stock y precios vienen del sistema y se actualizan solos. Acá decidís qué productos se muestran y cambiás fotos. <span id="hpcount"></span></p>
+      <div class="tools">
+        <input type="search" id="hpq" placeholder="Buscar por nombre, tono o código">
+        <select id="hpline"></select>
+        <select id="hpver"><option value="">Todos</option><option value="on">Visibles</option><option value="off">Ocultos</option></select>
+      </div>
+      <div class="plist" id="hplist"><p class="muted">Cargando productos…</p></div>
+    </div>
+    </div>
+    <div id="hs_outlet" hidden>
     <div class="card">
       <h2>Outlet por vencimiento</h2>
       <p class="sub">Entran solos los productos con lotes que vencen dentro del plazo, según el vencimiento de cada lote en el sistema. No entran los lotes vencidos, los que vencen este mes ni los accesorios. Se recalcula en cada actualización.</p>
@@ -220,21 +235,14 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       <p class="sub" id="hocnt">Consultando vencimientos…</p>
       <div class="plist" id="holist" style="max-height:40vh"></div>
     </div>
-    <div class="card">
-      <h2>Productos</h2>
-      <p class="sub">Stock y precios vienen del sistema y se actualizan solos. Acá decidís qué productos se muestran y cambiás fotos. <span id="hpcount"></span></p>
-      <div class="tools">
-        <input type="search" id="hpq" placeholder="Buscar por nombre, tono o código">
-        <select id="hpline"></select>
-        <select id="hpver"><option value="">Todos</option><option value="on">Visibles</option><option value="off">Ocultos</option></select>
-      </div>
-      <div class="plist" id="hplist"><p class="muted">Cargando productos…</p></div>
     </div>
+    <div id="hs_nuevos" hidden>
     <div class="card">
       <h2>Sin publicar</h2>
       <p class="sub">Productos de Wella, Nioxin y Sebastian con stock en el sistema que no están en el catálogo. Al publicar uno entra con la foto que subas; precio y stock siguen viniendo del sistema.</p>
       <div class="tools"><input type="search" id="hnq" placeholder="Buscar por nombre o código"><button class="btn sec" type="button" id="hnrec">Buscar en el sistema</button></div>
       <div class="plist" id="hnlist"><p class="muted">Tocá «Buscar en el sistema».</p></div>
+    </div>
     </div>
   </div>
 
@@ -425,11 +433,32 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   }
 
   /* ---------- navegación ---------- */
-  $('tabs').addEventListener('click',function(ev){ var b=ev.target.closest('button[data-v]'); if(!b) return; if(sucio&&!confirmar()) return; ir(b.getAttribute('data-v')) });
+  // Rubros (Nails, Hair) y dentro de cada uno sus secciones; cada rubro recuerda la última abierta.
+  var GRUPOS={nails:[['profesionales','Profesionales'],['interior','Interior del país'],['outlet','Outlet'],['nuevos','Sin publicar']],
+              hair:[['hair','Catálogo'],['hair-outlet','Outlet'],['hair-nuevos','Sin publicar']],
+              usuarios:[['usuarios','']], historial:[['historial','']]};
+  var ULT={}, ACT='profesionales', HSUB='cat';
+  function grupoDe(v){ for(var g in GRUPOS) if(GRUPOS[g].some(function(x){return x[0]===v})) return g; return 'nails' }
+  function pintarNav(v){
+    var g=grupoDe(v); ULT[g]=v; ACT=v;
+    Array.prototype.forEach.call($('tabs').children,function(c){ c.setAttribute('aria-pressed',c.getAttribute('data-g')===g) });
+    var subs=GRUPOS[g].filter(function(x){return x[1]});
+    $('subtabs').innerHTML=subs.map(function(x){ return '<button type="button" data-v="'+x[0]+'" aria-pressed="'+(x[0]===v)+'">'+x[1]+'</button>' }).join('');
+  }
+  function irA(v){ var mismoHair=v.indexOf('hair')===0&&VISTA==='hair'; if(!mismoHair&&sucio&&!confirmar()) return; ir(v) }
+  $('tabs').addEventListener('click',function(ev){ var b=ev.target.closest('button[data-g]'); if(!b) return; var g=b.getAttribute('data-g'); irA(ULT[g]||GRUPOS[g][0][0]) });
+  $('subtabs').addEventListener('click',function(ev){ var b=ev.target.closest('button[data-v]'); if(b) irA(b.getAttribute('data-v')) });
+  function hsub(s){
+    HSUB=s; ['cat','outlet','nuevos'].forEach(function(k){ $('hs_'+k).hidden=k!==s });
+    if(s==='nuevos'&&!HN) cargarHN();
+  }
   function ir(v){
+    var hs=null;
+    if(v.indexOf('hair')===0){ hs=v==='hair'?'cat':v.slice(5); pintarNav(v); if(VISTA==='hair'){ hsub(hs); window.scrollTo(0,0); return } v='hair' }
+    else pintarNav(v);
     VISTA=v; sucio=false; $('savebar').hidden=true; aviso('');
-    Array.prototype.forEach.call($('tabs').children,function(c){ c.setAttribute('aria-pressed',c.getAttribute('data-v')===v) });
     $('vcat').hidden=!(v in SITIOS); $('vusr').hidden=v!=='usuarios'; $('vlog').hidden=v!=='historial'; $('vnue').hidden=v!=='nuevos'; $('vout').hidden=v!=='outlet'; $('vhair').hidden=v!=='hair';
+    if(hs) hsub(hs);
     if(v in SITIOS) cargarCat(v); else if(v==='hair') cargarHair(); else if(v==='usuarios') cargarUsr(); else if(v==='nuevos') cargarNue(); else if(v==='outlet') cargarOut(); else cargarLog();
   }
 
