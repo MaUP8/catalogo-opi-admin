@@ -94,6 +94,13 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .cathd small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .cathd b{font-size:20px}
 .cathd .btn{text-decoration:none;white-space:nowrap}
+.cathd .cl{display:flex;align-items:center;gap:16px;min-width:0}
+.blogos{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.blogos img{display:block;height:26px;width:auto}
+.blogos img.opi{height:22px}.blogos img.wella{height:34px}.blogos img.nioxin{height:30px}.blogos img.seb{height:22px}
+.bsep{width:1px;align-self:stretch;background:var(--line)}
+.brandrow{display:flex;align-items:center;gap:12px;margin-bottom:14px}.brandrow small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
+@media(max-width:600px){.cathd .cl{flex-direction:column;align-items:flex-start;gap:8px}.bsep{display:none}.blogos{gap:12px}.blogos img.wella{height:24px}.blogos img.nioxin{height:22px}.blogos img.seb{height:15px}}
 .vrow{display:grid;grid-template-columns:1.2fr .9fr 1fr auto;gap:8px;align-items:end;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .vrow .lk{grid-column:1/-1;font-size:12px;color:var(--mute);display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .vrow .lk code{font-size:12px;background:var(--soft);padding:3px 8px;border-radius:6px;overflow-wrap:anywhere}
@@ -144,7 +151,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   <div id="gmsg" class="msg" hidden></div>
 
   <div id="vcat">
-    <div class="cathd"><div><small>Catálogo</small><b id="catname"></b></div><a class="btn sec" id="catweb" href="#" target="_blank" rel="noopener">Abrir web ↗</a></div>
+    <div class="cathd"><div class="cl"><div class="blogos"><img class="opi" src="img/opi.svg" alt="OPI"></div><span class="bsep"></span><div><small>Catálogo</small><b id="catname"></b></div></div><a class="btn sec" id="catweb" href="#" target="_blank" rel="noopener">Abrir web ↗</a></div>
     <div class="card">
       <h2>Pedidos por WhatsApp</h2>
       <p class="sub">A dónde llegan los pedidos. Si hay más de un número, la clienta elige a quién enviarlo.</p>
@@ -179,7 +186,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   </div>
 
   <div id="vhair" hidden>
-    <div class="cathd"><div><small>Catálogo</small><b>Hair · Wella, Nioxin y Sebastian</b></div><a class="btn sec" id="hweb" href="https://hair.catalogospbg.com/" target="_blank" rel="noopener">Abrir web ↗</a></div>
+    <div class="cathd"><div class="cl"><div class="blogos"><img class="wella" src="img/wella.png" alt="Wella Professionals"><img class="nioxin" src="img/nioxin.png" alt="Nioxin"><img class="seb" src="img/sebastian.png" alt="Sebastian Professional"></div><span class="bsep"></span><div><small>Catálogo</small><b>Hair</b></div></div><a class="btn sec" id="hweb" href="https://hair.catalogospbg.com/" target="_blank" rel="noopener">Abrir web ↗</a></div>
     <div class="card">
       <h2>Vendedores y links</h2>
       <p class="sub">Cada vendedor comparte su link: los pedidos que entran por ahí le llegan a su WhatsApp. Si una clienta entra sin link, elige a quién enviarlo.</p>
@@ -251,6 +258,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   </div>
 
   <div id="vnue" hidden>
+    <div class="brandrow blogos"><img class="opi" src="img/opi.svg" alt="OPI"><small>Catálogos OPI</small></div>
     <div class="card">
       <h2>Productos con stock fuera del catálogo</h2>
       <p class="sub">Productos OPI con stock en el sistema que todavía no están en los catálogos. Al publicar uno, entra en los dos catálogos con la foto que subas; precio y stock siguen viniendo del sistema.</p>
@@ -260,6 +268,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   </div>
 
   <div id="vout" hidden>
+    <div class="brandrow blogos"><img class="opi" src="img/opi.svg" alt="OPI"><small>Catálogos OPI</small></div>
     <div class="card">
       <h2>Qué entra al Outlet</h2>
       <p class="sub">Entran solos los tonos con stock de lotes que ingresaron antes de la fecha de corte. Las reposiciones al mismo lote cuentan como stock nuevo. Vale para los dos catálogos; cada catálogo puede prender o apagar su Outlet en su pestaña.</p>
