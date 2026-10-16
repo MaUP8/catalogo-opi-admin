@@ -6,6 +6,8 @@
  *
  * Puesta en marcha (una vez):
  *   1. Con la cuenta de la empresa, crear la planilla → Extensiones → Apps Script → pegar este archivo.
+ *      Si el editor no abre (pasa con varias cuentas de Google abiertas a la vez), crear un proyecto
+ *      independiente en script.google.com y poner el ID de la planilla en PLANILLA_ID.
  *   2. Ejecutar preparar(): arma la hoja "Altas" y la carpeta privada "Cédulas · altas catálogo".
  *   3. Implementar → Nueva implementación → Aplicación web. Ejecutar como: Yo. Acceso: Cualquier persona.
  *      Copiar la URL /exec al catálogo (VAR.interior.altas en index.html de catalogo-opi).
@@ -16,13 +18,14 @@
  */
 
 var HOJA = 'Altas';
+var PLANILLA_ID = '';   // solo si el proyecto no está vinculado a la planilla
 var COLUMNAS = ['Fecha', 'Ref. prospecto', 'Salón / comercio', 'Nombre y apellido', 'Cédula', 'RUT',
   'Dirección', 'Localidad', 'Departamento', 'Celular', 'Mail', 'Agencia de envío',
   'Pedido', 'Cédula frente', 'Cédula dorso', 'Consentimiento', 'Estado', 'N° cliente GCI', 'Notas'];
 var MAX_FOTO_B64 = 4 * 1024 * 1024;   // ~3 MB de imagen; el catálogo las manda de ~250 KB
 
 function preparar() {
-  var ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(HOJA) || ss.insertSheet(HOJA);
+  var ss = libro_(), sh = ss.getSheetByName(HOJA) || ss.insertSheet(HOJA);
   if (sh.getLastRow() === 0) {
     sh.appendRow(COLUMNAS);
     sh.setFrozenRows(1);
@@ -73,7 +76,7 @@ function alta_(d) {
       var f = DriveApp.getFileById(fotos[lado]);
       if (f.getParents().next().getId() !== carpeta_().getId()) return;   // solo archivos de nuestra carpeta
       f.setName('CI_' + ci + '_' + lado + '_' + limpio_(a.nombre, 40) + '.jpg');
-      links[lado] = '=HYPERLINK("' + f.getUrl() + '";"Ver ' + lado + '")';
+      links[lado] = '=HYPERLINK("' + f.getUrl() + '","Ver ' + lado + '")';
     } catch (err) { links[lado] = 'no encontrada'; }
   });
   var fila = [new Date(), limpio_(d.ref, 20), limpio_(a.salon, 80), limpio_(a.nombre, 80), ci, limpio_(a.rut, 20),
@@ -82,7 +85,7 @@ function alta_(d) {
     links.frente || 'por WhatsApp', links.dorso || 'por WhatsApp',
     'Sí · ' + Utilities.formatDate(new Date(), 'America/Montevideo', 'dd/MM/yyyy HH:mm'), 'Pendiente', '', ''];
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
-  try { SpreadsheetApp.getActive().getSheetByName(HOJA).appendRow(fila); } finally { lock.releaseLock(); }
+  try { libro_().getSheetByName(HOJA).appendRow(fila); } finally { lock.releaseLock(); }
   avisar_(fila);
   return { ok: true };
 }
@@ -92,9 +95,10 @@ function avisar_(fila) {
   if (!a) return;
   MailApp.sendEmail(a, 'Nueva alta desde el catálogo interior: ' + (fila[2] || fila[3]) + ' (' + fila[7] + ')',
     'Entró un alta nueva.\n\n' + fila[3] + ' · ' + fila[2] + '\n' + fila[7] + ', ' + fila[8] +
-    '\nPedido: ' + fila[12] + '\n\nPlanilla: ' + SpreadsheetApp.getActive().getUrl());
+    '\nPedido: ' + fila[12] + '\n\nPlanilla: ' + libro_().getUrl());
 }
 
+function libro_() { return SpreadsheetApp.getActive() || SpreadsheetApp.openById(PLANILLA_ID); }
 function carpeta_() { return DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('CARPETA')); }
 // Texto plano y acotado; evita que algo que empiece con = + - @ se interprete como fórmula en la planilla.
 function limpio_(v, max) { return String(v == null ? '' : v).replace(/[\r\n\t]+/g, ' ').trim().replace(/^[=+\-@]+/, '').slice(0, max || 100); }
