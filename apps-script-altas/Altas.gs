@@ -12,6 +12,8 @@
  *   3. Implementar → Nueva implementación → Aplicación web. Ejecutar como: Yo. Acceso: Cualquier persona.
  *      Copiar la URL /exec al catálogo (VAR.interior.altas en index.html de catalogo-opi).
  *   4. Opcional: propiedad AVISAR con mails separados por coma para recibir aviso de cada alta.
+ *   5. Ejecutar carpetaAdministracion(): junta la planilla y las cédulas en la carpeta
+ *      "Altas clientas · catálogo interior", que se comparte con administración (por persona, nunca con link).
  *
  * Datos personales (Ley 18.331): la carpeta de cédulas es privada. No compartirla con link.
  * La clienta da su consentimiento en el catálogo antes de enviar los datos.
@@ -103,3 +105,18 @@ function carpeta_() { return DriveApp.getFolderById(PropertiesService.getScriptP
 // Texto plano y acotado; evita que algo que empiece con = + - @ se interprete como fórmula en la planilla.
 function limpio_(v, max) { return String(v == null ? '' : v).replace(/[\r\n\t]+/g, ' ').trim().replace(/^[=+\-@]+/, '').slice(0, max || 100); }
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+// Carpeta única para administración: la planilla de altas + la carpeta de cédulas, juntas.
+// Se comparte desde Drive con las personas de administración (como editoras, para que marquen Estado y N° cliente GCI).
+// Si se carga la propiedad ADMINISTRACION (mails separados por coma), la comparte sola.
+function carpetaAdministracion() {
+  var p = PropertiesService.getScriptProperties(), id = p.getProperty('RAIZ'), raiz;
+  try { raiz = id && DriveApp.getFolderById(id); } catch (e) { raiz = null; }
+  if (!raiz) { raiz = DriveApp.createFolder('Altas clientas · catálogo interior'); p.setProperty('RAIZ', raiz.getId()); }
+  DriveApp.getFileById(libro_().getId()).moveTo(raiz);
+  carpeta_().moveTo(raiz);
+  raiz.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);   // nada de "cualquiera con el link"
+  var adm = String(p.getProperty('ADMINISTRACION') || '').split(',').map(function (m) { return m.trim(); }).filter(String);
+  if (adm.length) raiz.addEditors(adm);
+  Logger.log('Carpeta lista: ' + raiz.getUrl() + (adm.length ? ' · compartida con ' + adm.join(', ') : ' · compartila con administración desde Drive'));
+}
