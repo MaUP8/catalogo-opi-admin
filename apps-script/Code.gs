@@ -1,10 +1,10 @@
 /**
  * Backend del portal de administración de los catálogos OPI.
- * Corre como Web App de Google Apps Script en la cuenta de Mauri.
+ * Corre como Web App de Google Apps Script en la cuenta de la empresa (info@pbgroup.com.uy).
  *
  * Propiedades del script (Configuración del proyecto → Propiedades del script):
  *   GITHUB_TOKEN  token "fine-grained" de GitHub con permiso Contents: Read and write
- *                 SOLO sobre MaUP8/catalogo-opi, MaUP8/catalogo-opi-interior y MaUP8/catalogo-hair.
+ *                 SOLO sobre catalogospbg/catalogo-opi, catalogospbg/catalogo-opi-interior y catalogospbg/catalogo-hair.
  *   ADMIN_EMAIL   mail del administrador (Mauri).
  *   ADMIN_PIN     PIN inicial del administrador. Se guarda cifrado en el primer uso y se borra.
  *   PBI_TENANT_ID, PBI_CLIENT_ID, PBI_CLIENT_SECRET   app de Azure con acceso al modelo publicado.
@@ -16,10 +16,11 @@
  * viernes entre las 8 y las 9 y entre las 12 y las 13 (hora de Montevideo).
  */
 
+var ORG = 'catalogospbg';             // organización de GitHub de la empresa (Delarin S.A.)
 var REPOS = {
-  profesionales: 'MaUP8/catalogo-opi',
-  interior: 'MaUP8/catalogo-opi-interior',
-  hair: 'MaUP8/catalogo-hair'          // Wella, Nioxin y Sebastian: lógica propia en Hair.gs
+  profesionales: ORG + '/catalogo-opi',
+  interior: ORG + '/catalogo-opi-interior',
+  hair: ORG + '/catalogo-hair'          // Wella, Nioxin y Sebastian: lógica propia en Hair.gs
 };
 var ARCHIVOS = ['data/config.json', 'data/ajustes.json'];
 var SESION_HORAS = 12;
@@ -253,7 +254,7 @@ function guardar_(u, catalogo, archivos, resumen) {
       message: 'Portal: ' + (resumen || 'cambios en ' + p) + ' (' + u.email + ')',
       content: Utilities.base64Encode(texto, Utilities.Charset.UTF_8),
       branch: 'main',
-      committer: { name: 'Portal catálogos OPI', email: 'prato.mauricio@gmail.com' }
+      committer: { name: 'Portal catálogos OPI', email: 'info@pbgroup.com.uy' }
     };
     if (sha) cuerpo.sha = sha;
     var r = gh_('put', repo + '/contents/' + p, cuerpo);
@@ -296,7 +297,7 @@ function shaDe_(repo, path) {
 }
 
 function escribir_(repo, path, b64, mensaje, sha, autor) {
-  var cuerpo = { message: mensaje, content: b64, branch: 'main', committer: autor || { name: 'Portal catálogos OPI', email: 'prato.mauricio@gmail.com' } };
+  var cuerpo = { message: mensaje, content: b64, branch: 'main', committer: autor || { name: 'Portal catálogos OPI', email: 'info@pbgroup.com.uy' } };
   if (sha) cuerpo.sha = sha;
   var r = gh_('put', repo + '/contents/' + path, cuerpo);
   if (r.code !== 200 && r.code !== 201) throw new Error('GitHub respondió ' + r.code + ' al guardar ' + path + ': ' + (r.json.message || ''));
@@ -424,7 +425,7 @@ function productosPBI_() {
 
 var IMESI = 1.115, IVA = 1.22, LINEAS_ESMALTE = { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1 };
 var HORAS_AUTO = [8, 12];
-var AUTOR_AUTO = { name: 'Mauricio Prato', email: 'prato.mauricio@gmail.com' };
+var AUTOR_AUTO = { name: 'Catálogos PBGroup', email: 'info@pbgroup.com.uy' };
 
 function r2_(x) { return Number((+x).toFixed(2)); }
 function ahora_(fmt) { return Utilities.formatDate(new Date(), 'America/Montevideo', fmt); }

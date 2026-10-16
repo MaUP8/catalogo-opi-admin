@@ -1,7 +1,7 @@
 /**
  * Catálogo Hair (Wella Professionals, Nioxin y Sebastian Professional) — backend del portal.
  * Va como segundo archivo del mismo proyecto de Apps Script que Code.gs y usa sus funciones
- * (sesiones, GitHub, Power BI, historial). Repo: MaUP8/catalogo-hair, servido en hair.catalogospbg.com.
+ * (sesiones, GitHub, Power BI, historial). Repo: catalogospbg/catalogo-hair, servido en hair.catalogospbg.com.
  *
  * El token GITHUB_TOKEN tiene que incluir también el repo catalogo-hair (Contents: Read and write).
  *
@@ -13,7 +13,7 @@
  *   img/p/<sku>.jpg       fotos 600×600 con fondo blanco
  */
 
-var HAIR_REPO = 'MaUP8/catalogo-hair';
+var HAIR_REPO = 'catalogospbg/catalogo-hair';
 var HAIR_SITIO = 'https://hair.catalogospbg.com/';
 var HAIR_MARCAS_PBI = '{"WELLA PROFESSIONALS","NIOXIN","NIOXIN RESTAGE","SEBASTIAN"}';
 var HAIR_TIPO_ACCESORIO = 9;

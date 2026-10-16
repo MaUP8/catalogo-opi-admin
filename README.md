@@ -2,8 +2,8 @@
 
 Portal interno para manejar los dos catálogos públicos:
 
-- **Profesionales**: repo `MaUP8/catalogo-opi`
-- **Interior del país**: repo `MaUP8/catalogo-opi-interior`
+- **Profesionales**: repo `catalogospbg/catalogo-opi`
+- **Interior del país**: repo `catalogospbg/catalogo-opi-interior`
 
 Desde el portal se cambian:
 
@@ -30,7 +30,7 @@ Cada cambio queda como commit en el repo del catálogo, en `data/config.json` o 
 Navegador (GitHub Pages: este repo)
    │  mail + PIN
    ▼
-Backend (Google Apps Script, Web App en la cuenta de Mauri)
+Backend (Google Apps Script, Web App en la cuenta de la empresa: info@pbgroup.com.uy)
    │  token de GitHub guardado en Propiedades del script
    ▼
 GitHub: data/config.json y data/ajustes.json de cada catálogo
@@ -45,11 +45,13 @@ GitHub: data/config.json y data/ajustes.json de cada catálogo
 
 ## Puesta en marcha (una sola vez)
 
-1. **Token de GitHub** (lo crea Mauri). Ir a GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token.
-   - Repository access: *Only select repositories* → `catalogo-opi` y `catalogo-opi-interior`.
+1. **Token de GitHub**. GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token.
+   - Resource owner: la organización **catalogospbg** (no la cuenta personal).
+   - Repository access: *Only select repositories* → `catalogo-opi`, `catalogo-opi-interior` y `catalogo-hair`.
    - Permissions → Repository → **Contents: Read and write**. No hace falta nada más.
    - Vencimiento: el más largo que permita. Hay que anotar cuándo vence para renovarlo.
-2. **Proyecto de Apps Script.** En script.google.com → Nuevo proyecto, nombrarlo "Portal catálogos OPI" y pegar `apps-script/Code.gs`.
+2. **Proyecto de Apps Script.** Con la cuenta info@pbgroup.com.uy, en script.google.com → Nuevo proyecto, nombrarlo "Portal catálogos OPI" y pegar `apps-script/Code.gs` y `apps-script/Hair.gs`.
+   - Si se muda desde otra cuenta: pegar también `apps-script/Migracion.gs` y seguir sus instrucciones (exporta e importa usuarios, Outlet y credenciales sin pasar por el chat).
 3. **Propiedades del script** (Configuración del proyecto → Propiedades del script). Las carga Mauri:
    - `GITHUB_TOKEN`: el token del paso 1.
    - `ADMIN_EMAIL`: el mail del administrador.
@@ -72,4 +74,8 @@ GitHub: data/config.json y data/ajustes.json de cada catálogo
 - **Cambiar el código del backend:** editar en Apps Script → Implementar → Gestionar implementaciones → editar la existente → *Nueva versión*. Así la URL no cambia.
 - **Token vencido:** el portal da error al leer o guardar. Generar uno nuevo y reemplazar `GITHUB_TOKEN`.
 - **PIN del administrador olvidado:** volver a cargar `ADMIN_PIN` en las propiedades. En el próximo uso se reemplaza.
-- **Dominio propio:** catalogospbg.com (Cloudflare). Subdominios: opi (profesionales), opi-interior (interior), admin (este portal); CNAME a maup8.github.io con la nube en gris. Una marca nueva = un subdominio más y su URL en `SITIOS`.
+- **Dominio propio:** catalogospbg.com (Cloudflare). Subdominios: opi (profesionales), opi-interior (interior), admin (este portal); CNAME a catalogospbg.github.io con la nube en gris. El dominio está verificado en la organización (TXT `_github-pages-challenge-catalogospbg`). Una marca nueva = un subdominio más y su URL en `SITIOS`.
+
+## Altas de clientas (catálogo del interior)
+
+Proyecto de Apps Script aparte, vinculado a la planilla "Altas catálogo interior" de info@pbgroup.com.uy: `apps-script-altas/Altas.gs`. No comparte el token de GitHub. Guarda los datos en la hoja y las fotos de cédula en una carpeta privada de Drive. Instrucciones en el encabezado del archivo.
